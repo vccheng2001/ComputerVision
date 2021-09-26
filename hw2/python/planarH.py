@@ -4,11 +4,13 @@ import cv2
 import itertools
 
 def computeH(x1, x2):
+    print('x1', x1.shape, 'x2', x2.shape)
     N, _ = x1.shape # N x 2
     
+    # fill in 
     row = 0
     A = np.zeros((2*N, 9))
-    for i in range(0, len(x1)):
+    for i in range(0, len(x2)):
         x, xp  = x1[i][0], x2[i][0]
         y, yp = x1[i][1], x2[i][1]
 
@@ -17,10 +19,12 @@ def computeH(x1, x2):
 
         row += 2
 
-
+    # Singular Value Decomposition 
     U, S, VH = np.linalg.svd(A, full_matrices=True)
 
+    # last col of V: last row of VH
     H2to1 = VH[8, :]
+    # reshape to become transformation/homography matrix
     H2to1 = H2to1.reshape(3,3)
     print('H2to1', H2to1)
     return H2to1
@@ -31,7 +35,6 @@ def computeH(x1, x2):
 # computeH(x1,x2)
 
 def computeH_norm(x1, x2):
-    # x1: nx2
     #Q2.2.2
     #Compute the centroid of the points
 
@@ -39,14 +42,10 @@ def computeH_norm(x1, x2):
     x2_centroid = np.mean(x2, axis=0)
 
     # Normalize: Shift the origin of the points to the centroid
-
     x1 -= x1_centroid
     x2 -= x2_centroid
 
-
-
     #Normalize the points so that the largest distance from the origin is equal to sqrt(2)
-
     max_dist_x1 = np.max(np.linalg.norm(x1-x1_centroid))
     max_dist_x2 = np.max(np.linalg.norm(x2-x2_centroid))
 
@@ -67,17 +66,13 @@ def computeH_norm(x1, x2):
     #Compute homography x2_tilde to x1_tilde
     H2to1 = computeH(x1_norm, x2_norm)
 
-    print('H in computeH_norm', H)
+    print('H in computeH_norm', H2to1)
     #Denormalization
     
 
     return H2to1
 
 
-
-x1 = np.random.rand(4,2)
-x2 = np.random.rand(4,2)
-computeH_norm(x1,x2)
 
 
 def computeH_ransac(locs1, locs2, opts):
@@ -86,7 +81,27 @@ def computeH_ransac(locs1, locs2, opts):
     max_iters = opts.max_iters  # the number of iterations to run RANSAC for
     inlier_tol = opts.inlier_tol # the tolerance value for considering a point to be an inlier
 
-    
+    bestH = None
+    bestInliers = None
+    bestNumInliers = -np.inf
+
+    for i in max_iters:
+
+        H = computeH(locs1, locs2)
+
+        pts = H @ locs2 # apply transform to each pt in locs2
+
+        inliers = pts < inlier_tol
+
+        numInliers = np.count_nonzero(inliers)
+        if numInliers > bestNumInliers:
+            bestNumInliers = numInliers
+            bestInliers = inliers
+            bestH = H
+
+    return bestH, bestInliers
+        
+
 
 
     return bestH2to1, inliers

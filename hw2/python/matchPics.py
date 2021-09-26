@@ -6,7 +6,7 @@ from helper import computeBrief
 from helper import corner_detection
 from helper import plotMatches
 
-def matchPics(I1, I2, opts, plot):
+def matchPics(I1, I2, opts, plot=False):
 	#I1, I2 : Images to match
 	#opts: input opts
 	ratio = opts.ratio  #'ratio for BRIEF feature descriptor'
