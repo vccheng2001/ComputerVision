@@ -1,0 +1,6 @@
+data/*
+ec/*
+*.txt
+*.csv
+*.npz
+*.npy
