@@ -4,7 +4,7 @@ import skimage.io
 import skimage.color
 from opts import get_opts
 from matchPics import matchPics
-from planarH import computeH
+from planarH import computeH_ransac
 #Import necessary functions
 
 
@@ -18,12 +18,16 @@ cv_desk = cv2.imread("../data/cv_desk.png")
 hp_cover = cv2.imread("../data/hp_cover.jpg")
 
 # computes homography
-matches, locs1, locs2 = matchPics(hp_cover, cv_desk, opts)
+matches, locs1, locs2 = matchPics(hp_cover, cv_cover, opts)
 # locs1, locs2: Nx2 matrices containing x, y coords of matched point pairs
-H2to1 = computeH(locs1, locs2)
-print('h', H2to1)
+bestH, bestInliers = computeH_ransac(locs1, locs2, opts)
+print('BEST H', bestH)
+print('BEST INLIERS', bestInliers)
 # warp 
-warped = cv2.warpPerspective(hp_cover, M=H2to1, dsize=(cv_desk.shape[0], cv_desk.shape[1]))
+
+warped = cv2.warpPerspective(src=hp_cover.astype(np.float64),
+                             M=bestH.astype(np.float64),
+                             dsize=(cv_desk.shape[0], cv_desk.shape[1]))
 cv2.imshow("warped", warped)
 # modify hp_cover.jpg? 
 
