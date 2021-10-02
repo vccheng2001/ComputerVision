@@ -82,77 +82,107 @@ def computeH(x1, x2):
 # print('res', res/res[-1]) # should be [293,3, 1]
 # exit(-1)
 
-def computeH_norm(x1, x2):
+def computeH_norm(x1, x2): # N x 2
+    N1, _ = x1.shape
+    N2, _ = x2.shape
+
     #Q2.2.2
     #Compute the centroid of the points
     print('x1', x1)
     print('x2', x2)
 
-    x1 = x1.astype(np.float64)
-    x2 = x2.astype(np.float64)
+    x1 = np.hstack((x1.astype(np.float64), np.ones((N1, 1))))
+    x2 = np.hstack((x2.astype(np.float64), np.ones((N2, 1))))
 
     x1_centroid = np.mean(x1, axis=0).astype(np.float64)
     x2_centroid = np.mean(x2, axis=0).astype(np.float64)
 
-    print('x1x2', x1_centroid, x2_centroid)
+
+    print('x1x2centroid', x1_centroid, x2_centroid)
     # 1. translate the origin of the points to the centroid
-    x1 -= x1_centroid
-    x2 -= x2_centroid
-    max_dist_x1 = np.max(np.linalg.norm(x1-x1_centroid), axis=0)
-    max_dist_x2 = np.max(np.linalg.norm(x2-x2_centroid), axis=0)
+    x1_norm = x1 - x1_centroid
+    x2_norm = x2 - x2_centroid
+    print('x1norm', x1_norm)
+    max_dist_x1 = np.max(np.linalg.norm(x1_norm-x1_centroid), axis=0)
+    max_dist_x2 = np.max(np.linalg.norm(x2_norm-x2_centroid), axis=0)
 
     # 2. scale down by norm_factor (make max dist sqrt(2))
     norm_factor_x1  = max_dist_x1 / np.sqrt(2)
     norm_factor_x2  = max_dist_x2 / np.sqrt(2)
-    x1_norm = x1 / norm_factor_x1
-    x2_norm = x2 / norm_factor_x2
+    x1_norm = x1_norm / norm_factor_x1
+    x2_norm = x2_norm / norm_factor_x2
+    # print('NO T x1norm', x1_norm)
+    # print('NO T x2norm', x2_norm)
     
-
     # Compute homography x2_tilde to x1_tilde
+    x1_norm[:,2] = 1
+    x2_norm[:,2] = 1
+    # print('NO T x1norm', x1_norm)
+    # print('NO T x2norm', x2_norm)
     H_norm = computeH(x1_norm, x2_norm)
 
+    # print('H_norm', H_norm)
+    # print('x1n', x1_norm.shape, x1_norm) # N x 3
+    # print('x2n', x2_norm.shape, x2_norm) # N x 3
 
+    # r = H_norm.T @ np.array([-0.703,0.005,1])
+    # print('r', r/r[-1])
     #Similarity transform 1
 
-    scale_1 = np.array([[norm_factor_x1,0,0],
-              [0,norm_factor_x1,0],
+    trans_1 = np.array([[1,0,-x1_centroid[0]],
+              [0,1,-x1_centroid[1]],
                [0,0,1]])
-    trans_1 = np.array([[1,0,x1_centroid[0]],
-              [0,1,x1_centroid[1]],
+    scale_1 = np.array([[1/norm_factor_x1,0,0],
+              [0,1/norm_factor_x1,0],
                [0,0,1]])
 
 
     #Similarity transform 2
-    scale_2 = np.array([[norm_factor_x2,0,0],
-              [0,norm_factor_x2,0],
+    trans_2 = np.array([[1,0,-x2_centroid[0]],
+              [0,1,-x2_centroid[1]],
                [0,0,1]])
-    trans_2 = np.array([[1,0,x2_centroid[0]],
-              [0,1,x2_centroid[1]],
+    scale_2 = np.array([[1/norm_factor_x2,0,0],
+              [0,1/norm_factor_x2,0],
                [0,0,1]])
             
-    T1 = trans_1 @ scale_1
-    T2 = trans_2 @ scale_2
+    T1 = scale_1 @ trans_1  
+    T2 = scale_2 @ trans_2 
+    # print('T1', T1)
+    # print('T2', T2)
+    x1pnorm = T1 @ x1.T # (3x3) @ (3x4)
+    x2pnorm = T2 @ x2.T
+    # print('WITH T x1norm', x1pnorm.T)
+    # print('WITH T x2norm', x2pnorm.T)
 
-   
+    # Ensure 
+    # x1_tilde = T1 @ x1
+
+    
+
     # Return homography of unnormalized coordinates
 
+    # print('inv', np.linalg.inv(T1))
     # Denormalization
     H = np.linalg.inv(T1) @ H_norm @ T2
-
+    print('a', H @ (T2 @ x2.T))
+    print('b', T1 @ x1.T)
     return H
 
 
 
-# # TEST ONE
-# x1 = np.array([[93,-7],[293,3],[1207,7],[1218,3]])
-# x2 = np.array([[63,0],[868,-6],[998,-4],[309,2]])
+# # # TEST ONE
+# x1 = np.random.rand(4,2)
+# x2 = np.random.rand(4,2)
+# # x1 = np.array([[93,-7],[293,3],[1207,7],[1218,3]])
+# # x2 = np.array([[63,0],[868,-6],[998,-4],[309,2]])
 
 # H = computeH_norm(x1,x2)
+# print('H', H)
 # x2_inp = np.array([309,2,1])
 # res = H @ x2_inp
 # print('res', res/res[-1]) # should be [293,3, 1]
 
-
+# exit(-1)
 
 def computeH_ransac(locs1, locs2, opts):
 
@@ -183,12 +213,11 @@ def computeH_ransac(locs1, locs2, opts):
         subset2 = locs2[rand_idx]
 
 
-        H = computeH(subset1, subset2)
+        H = computeH_norm(subset1, subset2)
 
         # H converts point in locs2 to point in locs1
         col = np.ones((N,1))
         pts_to_transform = np.hstack((locs2, col)).T # 3 x N
-        print('pts_to_transf', pts_to_transform.shape)
 
         # apply transform to each pt in locs2 to get pts in locs1
         transformed_pts = H @ pts_to_transform # 3 x 3 @ 3 x N = 3 @ N

@@ -1,6 +1,8 @@
 import numpy as np
 import cv2
 import scipy.io as sio
+import matplotlib
+# matplotlib.use('TkAgg')
 from matplotlib import pyplot as plt
 import skimage.feature
 
@@ -20,6 +22,7 @@ def plotMatches(im1,im2,matches,locs1,locs2):
 	# im2 = cv2.cvtColor(im2, cv2.COLOR_BGR2GRAY)
 	plt.axis('off')
 	skimage.feature.plot_matches(ax,im1,im2,locs1,locs2,matches,matches_color='r',only_matches=True)
+	plt.savefig('a.png')
 	plt.show()
 	return
 

@@ -46,4 +46,5 @@ def matchPics(I1, I2, opts, plot=False):
 
 	locs1 = swap(locs1)
 	locs2 = swap(locs2)
+	# unordered locs1, unordered locs2
 	return matches, locs1, locs2
