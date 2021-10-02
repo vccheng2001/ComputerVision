@@ -11,12 +11,10 @@ def computeH(x1, x2):
     x1[:, [1, 0]] = x1[:, [0, 1]]
     x2[:, [1, 0]] = x2[:, [0, 1]]
 
-    # print('x1', x1.shape)
+    H_true, mask = cv2.findHomography(x1, x2, cv2.RANSAC, 5.0)
+    print('H_true', H_true)
 
-    # H, mask = cv2.findHomography(x1, x2, cv2.RANSAC, 5.0)
-
-    # print('x1', x1.shape, 'x2', x2.shape)
-    N, _ = x1.shape # 16 x 2
+    N, _ = x1.shape # N: number of point pairs
     
     # fill in 
     row = 0
@@ -25,38 +23,48 @@ def computeH(x1, x2):
         x, xp  = x1[i][0], x2[i][0]
         y, yp = x1[i][1], x2[i][1]
 
-        A[row] = [-x, -y, -1, 0, 0, 0, xp*x, xp*y, xp]
-        A[row+1] = [0, 0, 0, -x, -y, -1, yp*x, yp*y, yp]
-
+        A[row] = [x, y, 1, 0, 0, 0, -xp*x,-xp*y,-xp]
+        A[row+1] = [0, 0, 0, x, y, 1, -yp*x, -yp*y, -yp]
+       
         row += 2
-
-    # print('A', A)
-
-    # Singular Value Decomposition 
-    U, S, VH = np.linalg.svd(A, full_matrices=True)
-
-    # print('U', U.shape)
-    # print('S', S.shape)
-    # last col of V: last row of VH
-    H2to1 = VH[8,:]
     
-    # reshape to become transformation/homography matrix
-    H2to1 = H2to1.reshape(3,3)
-    s = H2to1[2,2]
-    H2to1 /= s
+    # Solve for h such that Ah = 0
+
+    # Method 1: Eigenvector corresponding to minimum eigenvalue
+    eigenvals, eigenvecs = np.linalg.eig(A.T@A)
+
+    min_eigenval_idx = np.argmin(eigenvals)
+    min_eigenval = eigenvals[min_eigenval_idx]
+
+    # NOTE: stores in ith column of np.linalg.eig, not row! (this is why transpose is necessary)
+    H_eig = eigenvecs.T[min_eigenval_idx]
+
+    # Method 2: Singular Value Decomposition 
+    U, S, VH = np.linalg.svd(A, full_matrices=True)
+    H_svd = VH[8,:]
+
+
     # divide by scale
-    return H2to1
+    H_svd = (H_svd / H_svd[-1]).reshape(3,3)
+    H_eig = (H_eig / H_eig[-1]).reshape(3,3)
+
+    print("H_svd", H_svd)
+    print("H_eig", H_eig)
+
+
+    assert np.allclose(H_svd, H_eig)
+    assert np.allclose(H_svd, H_true)
+
+    # reshape to become transformation/homography matrix
+    
+    return H_svd
 
 # np.random.seed(10)
 
-# x1 = np.array([[93,-7],[293,3],[1207,7],[1218,3]])
-# x2 = np.array([[63,0],[868,-6],[998,-4],[309,2]])
+x1 = np.array([[93,-7],[293,3],[1207,7],[1218,3]])
+x2 = np.array([[63,0],[868,-6],[998,-4],[309,2]])
 
-
-
-# x1 = np.random.rand(4,2)
-# x2 = np.random.rand(4,2)
-# computeH(x1,x2)
+computeH(x1,x2)
 
 def computeH_norm(x1, x2):
     #Q2.2.2
