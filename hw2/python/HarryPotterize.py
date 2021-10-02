@@ -18,7 +18,8 @@ cv_desk = cv2.imread("../data/cv_desk.png")
 hp_cover = cv2.imread("../data/hp_cover.jpg")
 
 # computes homography
-matches, locs1, locs2 = matchPics(hp_cover, cv_cover, opts)
+matches, locs1, locs2 = matchPics(hp_cover, hp_cover, opts, plot=True)
+
 # locs1, locs2: Nx2 matrices containing x, y coords of matched point pairs
 bestH, bestInliers = computeH_ransac(locs1, locs2, opts)
 print('BEST H', bestH)
@@ -27,7 +28,9 @@ print('BEST INLIERS', bestInliers)
 
 warped = cv2.warpPerspective(src=hp_cover.astype(np.float64),
                              M=bestH.astype(np.float64),
-                             dsize=(cv_desk.shape[0], cv_desk.shape[1]))
-cv2.imshow("warped", warped)
+                             dsize=(hp_cover.shape[0], hp_cover.shape[1]))
+# cv2.imshow("warped", warped)
+cv2.imwrite("warpedhpcvhpcvdesk.png", warped)
+print('doneeeeeee')
 # modify hp_cover.jpg? 
 

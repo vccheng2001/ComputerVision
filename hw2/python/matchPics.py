@@ -6,6 +6,11 @@ from helper import computeBrief
 from helper import corner_detection
 from helper import plotMatches
 
+
+
+def swap(x):
+    return x[:, [0, 1]]
+
 def matchPics(I1, I2, opts, plot=False):
 	#I1, I2 : Images to match
 	#opts: input opts
@@ -39,4 +44,6 @@ def matchPics(I1, I2, opts, plot=False):
 		plotMatches(I1_gray, I2_gray,matches,locs1,locs2)
 	
 
+	locs1 = swap(locs1)
+	locs2 = swap(locs2)
 	return matches, locs1, locs2
