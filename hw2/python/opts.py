@@ -21,7 +21,7 @@ def get_opts():
     ## Ransac (requires tuning)
     parser.add_argument('--max_iters', type=int, default=500,
                         help='the number of iterations to run RANSAC for')
-    parser.add_argument('--inlier_tol', type=float, default=50,
+    parser.add_argument('--inlier_tol', type=float, default=2,
                         help='the tolerance value for considering a point to be an inlier')
 
     ## Additional options (add your own hyperparameters here)

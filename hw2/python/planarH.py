@@ -88,8 +88,8 @@ def computeH_norm(x1, x2): # N x 2
 
     #Q2.2.2
     #Compute the centroid of the points
-    print('x1', x1)
-    print('x2', x2)
+    # print('x1', x1)
+    # print('x2', x2)
 
     x1 = np.hstack((x1.astype(np.float64), np.ones((N1, 1))))
     x2 = np.hstack((x2.astype(np.float64), np.ones((N2, 1))))
@@ -98,11 +98,10 @@ def computeH_norm(x1, x2): # N x 2
     x2_centroid = np.mean(x2, axis=0).astype(np.float64)
 
 
-    print('x1x2centroid', x1_centroid, x2_centroid)
     # 1. translate the origin of the points to the centroid
     x1_norm = x1 - x1_centroid
     x2_norm = x2 - x2_centroid
-    print('x1norm', x1_norm)
+    # print('x1norm', x1_norm)
     max_dist_x1 = np.max(np.linalg.norm(x1_norm-x1_centroid), axis=0)
     max_dist_x2 = np.max(np.linalg.norm(x2_norm-x2_centroid), axis=0)
 
@@ -164,17 +163,17 @@ def computeH_norm(x1, x2): # N x 2
     # print('inv', np.linalg.inv(T1))
     # Denormalization
     H = np.linalg.inv(T1) @ H_norm @ T2
-    print('a', H @ (T2 @ x2.T))
-    print('b', T1 @ x1.T)
+    # print('a', H @ (T2 @ x2.T))
+    # print('b', T1 @ x1.T)
     return H
 
 
 
-# # # TEST ONE
+# # TEST ONE
 # x1 = np.random.rand(4,2)
 # x2 = np.random.rand(4,2)
-# # x1 = np.array([[93,-7],[293,3],[1207,7],[1218,3]])
-# # x2 = np.array([[63,0],[868,-6],[998,-4],[309,2]])
+# x1 = np.array([[93,-7],[293,3],[1207,7],[1218,3]])
+# x2 = np.array([[63,0],[868,-6],[998,-4],[309,2]])
 
 # H = computeH_norm(x1,x2)
 # print('H', H)
@@ -192,7 +191,7 @@ def computeH_ransac(locs1, locs2, opts):
     locs1 = locs1[:N,:]
     locs2 = locs2[:N,:]
 
-    print('N', N)
+    # print('N', N)
     
     #Q2.2.3
     #Compute the best fitting homography given a list of matching points
@@ -222,16 +221,26 @@ def computeH_ransac(locs1, locs2, opts):
         # apply transform to each pt in locs2 to get pts in locs1
         transformed_pts = H @ pts_to_transform # 3 x 3 @ 3 x N = 3 @ N
         transformed_pts = transformed_pts / transformed_pts[-1]
+        # print('transfpts', transformed_pts)
+
         transformed_pts = (transformed_pts[:2,:]).T # N x 2
 
+        # print('locs1', locs1.shape)
+        # print('transfpts', transformed_pts.shape)
+        
         dist = np.linalg.norm(locs1 - transformed_pts, axis=1)
+        # print('dist', dist)
         idx = np.argwhere(dist < inlier_tol).flatten() # inlier_tol = 2
+        # print('iddx', idx)
         numInliers = len(idx)
 
+
+        print('num inliers', numInliers)
         if numInliers == 0:
-            print('No inliers found')
+            pass
+            # print('No inliers found')
         else:
-            print(f'{numInliers} inliers found')
+            # print(f'{numInliers} inliers found')
             inliers = transformed_pts[idx]
     
         # repeat each iteration with current LARGEST set of inliers
@@ -239,6 +248,8 @@ def computeH_ransac(locs1, locs2, opts):
             bestNumInliers = numInliers
             bestInliers = inliers
             bestH = H
+
+    print('BEST NUM INLIERS', bestNumInliers)
     return bestH, bestInliers
         
 

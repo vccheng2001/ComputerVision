@@ -9,7 +9,7 @@ from helper import plotMatches
 
 
 def swap(x):
-    return x[:, [0, 1]]
+    return x[:, [1,0]]
 
 def matchPics(I1, I2, opts, plot=False):
 	#I1, I2 : Images to match
