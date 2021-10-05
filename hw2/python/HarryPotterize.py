@@ -14,6 +14,10 @@ print('opts', opts)
 cv_cover = cv2.imread("../data/cv_cover.jpg")
 cv_desk = cv2.imread("../data/cv_desk.png")
 hp_cover = cv2.imread("../data/hp_cover.jpg")
+hp_desk = cv2.imread("../data/hp_desk.png")
+
+
+hp_cover = cv2.resize(hp_cover, dsize=(cv_cover.shape[1], cv_cover.shape[0]))
 
 # computes homography
 # [x1,y1]   [x2,y2]
@@ -35,10 +39,45 @@ bestH, bestInliers = computeH_ransac(locs1, locs2, opts)
 # print('BEST INLIERS', bestInliers)
 # warp 
 
+
+# dsize: (width, height)
 warped = cv2.warpPerspective(src=hp_cover.astype(np.float64),
                              M=bestH.astype(np.float64),
-                             dsize=(cv_desk.shape[0], cv_desk.shape[1]))
-cv2.imshow("warped", warped)
-cv2.imwrite("warpedhpcvhpcvdesk.png", warped)
-# modify hp_cover.jpg? 
+                             dsize=(cv_desk.shape[1], cv_desk.shape[0]))
+# resize full image to overlay on cv desk
+warped = cv2.resize(warped, dsize=(cv_desk.shape[1], cv_desk.shape[0]))
+cv2.imwrite("warped.png", warped)
+warped = warped.astype(np.uint8)
 
+
+# If the element at position x,y in the mask
+# is 0, no operation is performed, 
+# and the pixel in the resulting array is 0,0,0 (black)
+
+# any pixel value at 0 (pitch black) would be 'false'. 
+# Since false & anything = false, any other pixel with value above 0 would become 0.
+
+# fg (book cover) white
+mask = cv2.threshold(cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY), 0, 255, cv2.THRESH_BINARY_INV)[1]
+mask = mask.astype(np.uint8)
+cv2.imwrite('mask.png',mask)
+
+# bg (desk) white
+mask_inv = cv2.bitwise_not(mask).astype(np.uint8)
+cv2.imwrite('maskinv.png',mask_inv)
+
+cv_desk = cv_desk.astype(np.uint8)
+
+# take book 
+# warped = warped.astype(np.uint8)
+fg = cv2.bitwise_and(warped, warped, mask=mask_inv)
+cv2.imwrite('fg.jpg',fg)
+
+# take desk
+
+bg = cv2.bitwise_and(cv_desk,cv_desk, mask=mask)
+cv2.imwrite('bg.jpg',bg)
+
+res = cv2.add(bg, fg)
+
+cv2.imwrite("res.jpg", res)
