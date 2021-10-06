@@ -8,7 +8,8 @@ from planarH import computeH_ransac
 #Import necessary functions
 #Write script for Q2.2.4
 opts = get_opts()
-print('opts', opts)
+
+print('Opts', opts)
 
 
 def main():
@@ -34,35 +35,30 @@ def main():
 
 def compositeH(H, template, img, write=True):
    
+    # Warp img using H to template dimensions
     img = cv2.warpPerspective(src=img.astype(np.float64),
                              M= H.astype(np.float64),
                              dsize=(template.shape[1], template.shape[0]))
-    # cv2.imwrite("IMG.jpg", img)
-
-    # # resize full image to overlay on bg
-    # img = cv2.resize(img, dsize=(template.shape[1], template.shape[0]))
     img = img.astype(np.uint8)
-    # to extract bg
+
+
+    # Mask to extract background 
     mask = cv2.threshold(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), 0, 255, cv2.THRESH_BINARY_INV)[1]
-   
-    # cv2.imwrite("mask_ar.jpg", mask)
     mask = mask.astype(np.uint8)
 
-    # to extract fg
+    # Mask to extract foreground
     mask_inv = cv2.bitwise_not(mask).astype(np.uint8)
-    # cv2.imwrite("mask_inv_ar.jpg", mask_inv)
 
+    # Get background, foreground 
     fg = cv2.bitwise_and(img, img, mask=mask_inv)
-    # cv2.imwrite("fg_ar.jpg", fg)
-
     bg = cv2.bitwise_and(template, template, mask=mask)
-    # cv2.imwrite("bg_ar.jpg", bg)
 
-    # add 
+    # Add to get composite image (black + anything = anything)
     composite_img = cv2.add(bg, fg)
 
     if write:
         cv2.imwrite("composite_img.jpg", composite_img)
+
     return composite_img
 
 
