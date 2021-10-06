@@ -102,8 +102,10 @@ def computeH_norm(x1, x2): # N x 2
     x1_norm = x1 - x1_centroid
     x2_norm = x2 - x2_centroid
     # print('x1norm', x1_norm)
-    max_dist_x1 = np.max(np.linalg.norm(x1_norm-x1_centroid), axis=0)
-    max_dist_x2 = np.max(np.linalg.norm(x2_norm-x2_centroid), axis=0)
+    # max_dist_x1 = np.max(np.linalg.norm(x1_norm-x1_centroid), axis=0)
+    # max_dist_x2 = np.max(np.linalg.norm(x2_norm-x2_centroid), axis=0)
+    max_dist_x1 = np.max(np.linalg.norm(x1_norm), axis=0)
+    max_dist_x2 = np.max(np.linalg.norm(x2_norm), axis=0)
 
     # 2. scale down by norm_factor (make max dist sqrt(2))
     norm_factor_x1  = max_dist_x1 / np.sqrt(2)
@@ -128,24 +130,33 @@ def computeH_norm(x1, x2): # N x 2
     # print('r', r/r[-1])
     #Similarity transform 1
 
-    trans_1 = np.array([[1,0,-x1_centroid[0]],
-              [0,1,-x1_centroid[1]],
-               [0,0,1]])
+    trans_1 = np.array([[1,0,-x1_centroid[0]/norm_factor_x1],
+                        [0,1,-x1_centroid[1]/norm_factor_x1],
+                        [0,0,1]])
     scale_1 = np.array([[1/norm_factor_x1,0,0],
-              [0,1/norm_factor_x1,0],
-               [0,0,1]])
+                        [0,1/norm_factor_x1,0],
+                        [0,0,1]])
+
+            
 
 
     #Similarity transform 2
-    trans_2 = np.array([[1,0,-x2_centroid[0]],
-              [0,1,-x2_centroid[1]],
+    trans_2 = np.array([[1,0,-x2_centroid[0]/norm_factor_x2],
+              [0,1,-x2_centroid[1]/norm_factor_x2],
                [0,0,1]])
     scale_2 = np.array([[1/norm_factor_x2,0,0],
               [0,1/norm_factor_x2,0],
                [0,0,1]])
             
-    T1 = scale_1 @ trans_1  
-    T2 = scale_2 @ trans_2 
+    # T1 = scale_1 @ trans_1  
+    # T2 = scale_2 @ trans_2 
+    T1 = np.array([[1/norm_factor_x1,0,-x1_centroid[0]/norm_factor_x1],
+                        [0,1/norm_factor_x1,-x1_centroid[1]/norm_factor_x1],
+                        [0,0,1]])
+    
+    T2 = np.array([[1/norm_factor_x2,0,-x2_centroid[0]/norm_factor_x2],
+                        [0,1/norm_factor_x2,-x2_centroid[1]/norm_factor_x2],
+                        [0,0,1]])
     # print('T1', T1)
     # print('T2', T2)
     x1pnorm = T1 @ x1.T # (3x3) @ (3x4)
@@ -163,6 +174,8 @@ def computeH_norm(x1, x2): # N x 2
     # print('inv', np.linalg.inv(T1))
     # Denormalization
     H = np.linalg.inv(T1) @ H_norm @ T2
+    H /= H[2,2]
+    # print("***** H ****", H)
     # print('a', H @ (T2 @ x2.T))
     # print('b', T1 @ x1.T)
     return H
@@ -234,8 +247,6 @@ def computeH_ransac(locs1, locs2, opts):
         # print('iddx', idx)
         numInliers = len(idx)
 
-
-        print('num inliers', numInliers)
         if numInliers == 0:
             pass
             # print('No inliers found')
@@ -249,39 +260,6 @@ def computeH_ransac(locs1, locs2, opts):
             bestInliers = inliers
             bestH = H
 
-    print('BEST NUM INLIERS', bestNumInliers)
+    # print('BEST NUM INLIERS', bestNumInliers)
     return bestH, bestInliers
         
-
-
-# x1 = np.array([[93,-7],[293,3],[1207,7],[1218,3]])
-# x2 = np.array([[63,0],[868,-6],[998,-4],[309,2]])
-
-# class Opts:
-#     def __init__(self):
-#         self.inlier_tol = 2
-#         self.max_iters = 500
-# opts = Opts()
-# bestH, bestInliers = computeH_ransac(x1,x2, opts)
-
-def compositeH(H2to1, template, img):
-    
-    #Create a composite image after warping the template image on top
-    #of the image using the homography
-
-    #Note that the homography we compute is from the image to the template;
-    #x_template = H2to1*x_photo
-    #For warping the template to the image, we need to invert it.
-    
-
-    #Create mask of same size as template
-
-    #Warp mask by appropriate homography
-
-    #Warp template by appropriate homography
-
-    #Use mask to combine the warped template and the image
-    
-    return composite_img
-
-

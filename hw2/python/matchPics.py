@@ -22,8 +22,11 @@ def matchPics(I1, I2, opts, plot=False):
 
 	I1_gray = cv2.cvtColor(I1, cv2.COLOR_BGR2GRAY)
 
+	cv2.imwrite("I1_gray.jpg", I1_gray)
+
 	I2_gray = cv2.cvtColor(I2, cv2.COLOR_BGR2GRAY)
 
+	cv2.imwrite("I2_gray.jpg", I2_gray)
 
 	
 	#Detect Corner Peaks using FAST algorithm
