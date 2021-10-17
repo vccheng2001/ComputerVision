@@ -24,86 +24,87 @@ def LucasKanade(It, It1, rect, threshold, num_iters, p0=np.zeros(2)):
     p = p0
 
     # (x1,y1): top-left. (x2,h2): bottom-right
-    x1, y1, x2,  y2 = rect
-    template = crop_img(It, rect) # crop to rect
+    x1, y1, x2, y2 = rect
+    # width, height of rect 
+    rect_h, rect_w = x2-x1, y2-y1
+
+    # gradient of img
+    np.gradient(It1)
     img = It1
-    # cv2.imshow('template', template)
-    # cv2.waitKey()
-    # cv2.imshow('img', img)
-    # cv2.waitKey()
+    template = It
+    img_h, img_w = img.shape
+
 	
     
-    print('rect', rect)
+    y = np.arange(0, img_h, 1)
+    x = np.arange(0, img_w, 1)
+    rect_x = np.linspace(x1, x2, rect_w)
+    rect_y = np.linspace(y1, y2, rect_h)
+    img_grid_x, img_grid_y  = np.meshgrid(rect_x, rect_y)
+    
+    
+    I_gx, I_gy = np.gradient(img)
+    
+    # splines 
+    sp_template = RectBivariateSpline(y, x, template)
+    sp_img = RectBivariateSpline(y, x, img)
+    sp_gx = RectBivariateSpline(y, x, I_gx)
+    sp_gy = RectBivariateSpline(y, x, I_gy)
 
-    w, h = img.shape[1], img.shape[0]
+    template = sp_template.ev(img_grid_x,img_grid_y)
+
+
     for iter in range(int(num_iters)):
-        print('p', p)
-        # warp matrix 
-        W = np.array([[1,0,p[0]],
-                      [0,1,p[1]]])
-        print('b4 warp', img.shape)
-        warped_img = cv2.warpAffine(src=img, M=W, dsize=(w,h))
-        print('warped', warped_img.shape)
-        warped_img = crop_img(warped_img, rect)
 
-        # (86, 35)
-        print('cropped', warped_img.shape)
+        #  (1) warped img by translation 
+        x1_w, y1_w = x1+p[0], y1+p[1]
+        x2_w, y2_w = x2+p[0], y1+p[1]   
 
-        # template - IWxp
+
+        # Evaluate in rect
+        # warped x, y coords in rectangle
+        wp_rect_x = np.linspace(x1_w, x2_w, rect_w)
+        wp_rect_y = np.linspace(y1_w, y2_w, rect_h)
+        wp_img_grid_x, wp_img_grid_y = np.meshgrid(wp_rect_x, wp_rect_y)
+        # print('wp_img_grid_x', wp_img_grid_x.shape)
+        # evaluate at warped locations 
+        warped_img = sp_img.ev(wp_img_grid_x, wp_img_grid_y)   
+
+        # print('wp_img', warped_img.shape)   
+        # print('template', template.shape)
+        # (2) compute error Template - Warped Image
         error = template - warped_img
+        # print('error', error.shape) # (86,35)
 
+        # (3) warp gradient with W(x,p)
+        # first, calculate gradient
 
-        # gradient of image 
-        gx = cv2.Sobel(img,cv2.CV_64F,1,0,ksize=5)
-        gy = cv2.Sobel(img,cv2.CV_64F,0,1,ksize=5)
+        # (4) evaluate jacobian at warped image locs
+        wp_grad_x = sp_gx.ev(wp_img_grid_x, wp_img_grid_y).flatten() 
+        wp_grad_y = sp_gy.ev(wp_img_grid_x, wp_img_grid_y).flatten()
 
-        print('gx', gx.shape) # (240,320) h,w
-        
-        # compute gradient of image I, then warped onto
-        # coordinate frame of T under current estimate of warp
-        # W(x;p) (remember p is getting updated at each iteration)
-        warped_gx = cv2.warpAffine(gx, W, dsize=(w,h))
-        warped_gy = cv2.warpAffine(gy, W, dsize=(w,h))
+        # print('warped_grad_x', wp_grad_x.shape) # (86,35)
+        warped_grad = np.stack((wp_grad_x, wp_grad_y)).T
 
-
-        # # compute gradient of image
-        # gx, gy = np.gradient(img)
-        # print "gx =", gx
-        # print "gy =", gy
-
-        warped_gx = crop_img(warped_gx, rect)
-        warped_gy = crop_img(warped_gy, rect)
-        print('warped_gx', warped_gx.shape)
-        print('warped_gy', warped_gy.shape)
-
-        warped_grad = np.stack((warped_gx, warped_gy),axis=2)
-        print('warped_grad', warped_grad.shape) # (86,35)
-        # Jacobian dW/dp
-
-        jacobian = np.array([[0,0,1], #(86,35,2)
-                             [0,0,1]])
-
-        # steepest descent images
-        # (86,35,2) @ (2 x 3) = (86,35,3)
-        sd = warped_grad @ jacobian
-        
-        print('steepest descent', sd.shape)
+        # (5) Steepest descent deltaI @ dW/dp
+        # print('warped_grad', warped_grad.shape)
+        sd = warped_grad @ np.array([[1,0],[0,1]])
         sd_T = sd.T
-        # (3,35,86)
-        print('steepest descent T', sd_T.shape)
+        # print('sd_T', sd_T.shape)
 
-        print('sd_T @ sd', (sd_T @ sd).shape)
-        # Hessian
-        H = (sd_T @ sd).sum((0,1))
-        
-        # steepest descent parameter updates computed by
-        # dot proding error with steepest descent images
+        # (6) Compute Hessian
+        H = sd_T @ sd
+        # print('H', H.shape)
+      
+        # (7, 8) Compute dp
+        # (2x2) @ (2xN)@(Nx1) = (2x1)
+        dp = np.linalg.inv(H) @ (sd_T @ error.flatten())
 
-        sd_updates = (sd_T @ error).sum((0,1))
-        # get final parameter updates
-        dp = np.linalg.inv(H) @ sd_updates
+        # print('dp', dp.shape)
+        # print('p', p.shape)
+        # (9) Update parameters
         p = p + dp
-
+        # Check stopping condition 
         if np.linalg.norm(dp)**2 < threshold:
             break
     
