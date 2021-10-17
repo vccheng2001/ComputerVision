@@ -25,7 +25,7 @@ def LucasKanade(It, It1, rect, threshold, num_iters, p0=np.zeros(2)):
     # gradient of img
     img = It1
     template = It
-    img_h, img_w = template.shape
+    img_h, img_w = img.shape
 
 	
     
@@ -40,6 +40,7 @@ def LucasKanade(It, It1, rect, threshold, num_iters, p0=np.zeros(2)):
     
     # splines 
     sp_template = RectBivariateSpline(y, x, template)
+    print(img.shape, template.shape)
     sp_img = RectBivariateSpline(y, x, img)
     sp_gx = RectBivariateSpline(y, x, I_gx)
     sp_gy = RectBivariateSpline(y, x, I_gy)
@@ -112,7 +113,7 @@ def LucasKanade(It, It1, rect, threshold, num_iters, p0=np.zeros(2)):
 
 
 
-def LucasKanadeWTC(It, It1, rect, threshold, num_iters, p0=np.zeros(2)):
+def LucasKanadeWTC(It, It1, rect, threshold, num_iters, p0=np.zeros(2), update_template=True):
     """
     :param It: template image
     :param It1: Current image
@@ -126,14 +127,14 @@ def LucasKanadeWTC(It, It1, rect, threshold, num_iters, p0=np.zeros(2)):
     p = p0
 
     # (x1,y1): top-left. (x2,h2): bottom-right
-    x1, y1, x2, y2 = rect
+    x1, y1, x2, y2 =map(int, rect)
     # width, height of rect 
-    rect_w, rect_h = int(x2-x1), int(y2-y1)
+    rect_w, rect_h = x2-x1,y2-y1
 
     # gradient of img
     img = It1
     template = It
-    img_h, img_w = template.shape
+    img_h, img_w = img.shape
 
 	
     
@@ -143,11 +144,10 @@ def LucasKanadeWTC(It, It1, rect, threshold, num_iters, p0=np.zeros(2)):
     rect_y = np.linspace(y1, y2, rect_h)
     img_grid_x, img_grid_y  = np.meshgrid(rect_x, rect_y)
     
-    
+    print('shapes', img.shape, template.shape)
     I_gx, I_gy = np.gradient(img)
     
     # splines 
-    sp_template = RectBivariateSpline(y, x, template)
     sp_img = RectBivariateSpline(y, x, img)
     sp_gx = RectBivariateSpline(y, x, I_gx)
     sp_gy = RectBivariateSpline(y, x, I_gy)
@@ -155,9 +155,9 @@ def LucasKanadeWTC(It, It1, rect, threshold, num_iters, p0=np.zeros(2)):
     # original template: region of interest to track
 
     if update_template:
+        sp_template = RectBivariateSpline(y, x, template)
         template = sp_template.ev(img_grid_y,img_grid_x)
-    else:
-        template = prev_template
+    
 
     for iter in range(int(num_iters)):
 
@@ -170,8 +170,8 @@ def LucasKanadeWTC(It, It1, rect, threshold, num_iters, p0=np.zeros(2)):
         # warped x, y coords in rectangle
         wp_rect_x = np.linspace(x1_w, x2_w, rect_w)
         wp_rect_y = np.linspace(y1_w, y2_w, rect_h)
+        
         wp_img_grid_x, wp_img_grid_y = np.meshgrid(wp_rect_x, wp_rect_y)
-        # print('wp_img_grid_x', wp_img_grid_x.shape)
         # evaluate at warped locations 
         warped_img = sp_img.ev(wp_img_grid_y, wp_img_grid_x)   
 
@@ -217,10 +217,12 @@ def LucasKanadeWTC(It, It1, rect, threshold, num_iters, p0=np.zeros(2)):
             print('below threshold')
             break
 
-        if np.linalg.norm(p-p_prev) > epsilon:
-            update_template = False
-        
-
+    epsilon = threshold
+    if np.linalg.norm(p-p_prev) > epsilon:
+        print("Don't update")
+        prev_template = template # don't update
+    else: 
+        prev_template = None
 
             
-    return p
+    return p, prev_template
