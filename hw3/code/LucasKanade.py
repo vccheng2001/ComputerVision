@@ -40,7 +40,6 @@ def LucasKanade(It, It1, rect, threshold, num_iters, p0=np.zeros(2)):
     
     # splines 
     sp_template = RectBivariateSpline(y, x, template)
-    print(img.shape, template.shape)
     sp_img = RectBivariateSpline(y, x, img)
     sp_gx = RectBivariateSpline(y, x, I_gx)
     sp_gy = RectBivariateSpline(y, x, I_gy)
@@ -101,7 +100,6 @@ def LucasKanade(It, It1, rect, threshold, num_iters, p0=np.zeros(2)):
         p = p + dp
         # Check stopping condition 
         if np.linalg.norm(dp)**2 < threshold:
-            print('below threshold')
             break
 
 
@@ -144,7 +142,6 @@ def LucasKanadeWTC(It, It1, rect, threshold, num_iters, p0=np.zeros(2), update_t
     rect_y = np.linspace(y1, y2, rect_h)
     img_grid_x, img_grid_y  = np.meshgrid(rect_x, rect_y)
     
-    print('shapes', img.shape, template.shape)
     I_gx, I_gy = np.gradient(img)
     
     # splines 
@@ -214,12 +211,11 @@ def LucasKanadeWTC(It, It1, rect, threshold, num_iters, p0=np.zeros(2), update_t
 
         # Check stopping condition 
         if np.linalg.norm(dp)**2 < threshold:
-            print('below threshold')
             break
 
     epsilon = threshold
     if np.linalg.norm(p-p_prev) > epsilon:
-        print("Don't update")
+        # print("Don't update")
         prev_template = template # don't update
     else: 
         prev_template = None

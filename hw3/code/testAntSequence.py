@@ -2,7 +2,7 @@ import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-
+from SubtractDominantMotion import *
 # write your script here, we recommend the above libraries for making your animation
 
 parser = argparse.ArgumentParser()
@@ -15,3 +15,29 @@ threshold = args.threshold
 tolerance = args.tolerance
 
 seq = np.load('../data/antseq.npy')
+
+
+
+
+
+
+h, w, num_frames = seq.shape
+
+
+for i in range(num_frames-1):
+    print(f'Frame {i}')
+
+    # track optical flow from frame to frame
+    template = seq[:,:,i]
+    img = seq[:,:,i+1]# image at t+1
+    print('image', img)
+
+    if i == 0:
+        cv2.imshow('img', img)
+        cv2.waitKey(0)
+        cv2.imshow('temp', template)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+    SubtractDominantMotion(template, img, threshold, num_iters, tolerance)    
+    
