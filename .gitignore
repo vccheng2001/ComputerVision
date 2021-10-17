@@ -4,3 +4,5 @@ ec/*
 *.csv
 *.npz
 *.npy
+
+.jpg*
