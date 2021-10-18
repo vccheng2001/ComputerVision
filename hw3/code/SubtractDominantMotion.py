@@ -18,30 +18,49 @@ def SubtractDominantMotion(image1, image2, threshold, num_iters, tolerance):
 
     transf = warpAffine(image1, M, dsize=(image2.shape[1],image2.shape[0]))
     
-    cv2.imshow('transf', transf)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
 
     diff =  np.abs(image2 - image1)#transf)
 
     tolerance=0.05
     image1 = image1.astype(np.uint8)
-    print(diff)
-    # if  > threshold, set to black, else white 
-    mask = cv2.threshold(diff, tolerance, 255, cv2.THRESH_BINARY_INV)[1]
-    mask = mask.astype(np.uint8)
-    cv2.imshow('mask', mask)
+
+
+    _, mask = cv2.threshold(diff, tolerance, 255, cv2.THRESH_BINARY_INV)
+    result = cv2.cvtColor(image1, cv2.COLOR_GRAY2RGB).astype(np.uint8)
+    color= cv2.cvtColor(image1, cv2.COLOR_GRAY2RGB).astype(np.uint8)
+
+    result[mask==0] = (255,0,0)
+    result[mask!=0] = (255,255,255)
+    cv2.imshow("result", color)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+    result = cv2.addWeighted(result, 0.5, color,0.5, 0)
 
-    print('Writing result...')
 
 
-    result = apply_mask(image1, mask)
-    cv2.imwrite("result.jpg", result)
+    cv2.imshow("result w", result)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    # cv2.imwrite("result.jpg", result)
 
-    return result
-# a mask only considers pixels in the original image where the mask is greater than zero.
+
+    # # if  > threshold, set to black, else white 
+    # _, mask = cv2.threshold(diff, tolerance, 255, cv2.THRESH_BINARY_INV)
+    # color =  cv2.cvtColor(image1, cv2.COLOR_GRAY2RGB).astype(np.uint8)
+    # result = cv2.cvtColor(image1, cv2.COLOR_GRAY2RGB).astype(np.uint8)
+    
+    # result[mask==0] = (255,0,0)
+
+    # result = apply_mask(color, result).astype(np.uint8)
+    # cv2.imshow("result", result)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+    # cv2.imwrite("result.jpg", result)
+    # return 
+
+#     return result
+# # a mask only considers pixels in the original image where the mask is greater than zero.
 def apply_mask(frame, mask):
+    print('f', frame.shape, mask.shape, type(frame), type(mask))
     """Apply binary mask to frame, return in-place masked image."""
-    return cv2.bitwise_and(frame, frame, mask=mask)
+    return cv2.bitwise_or(frame, frame, mask=mask)
