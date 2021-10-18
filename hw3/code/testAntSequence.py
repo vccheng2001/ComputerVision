@@ -30,14 +30,8 @@ for i in range(num_frames-1):
     # track optical flow from frame to frame
     template = seq[:,:,i]
     img = seq[:,:,i+1]# image at t+1
-    print('image', img)
+    # result = SubtractDominantMotion(template, img, threshold, num_iters, tolerance)    
 
-    if i == 0:
-        cv2.imshow('img', img)
-        cv2.waitKey(0)
-        cv2.imshow('temp', template)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-
-    SubtractDominantMotion(template, img, threshold, num_iters, tolerance)    
-    
+    if i % 30 == 0:
+        result = SubtractDominantMotion(template, img, threshold, num_iters, tolerance)    
+        cv2.imwrite(f'ant-frame{i}.jpg', result)

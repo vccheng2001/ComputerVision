@@ -21,7 +21,7 @@ def SubtractDominantMotion(image1, image2, threshold, num_iters, tolerance):
 
     diff =  np.abs(image2 - image1)#transf)
 
-    tolerance=0.05
+    tolerance=0.1
     # mask extracts "moving" objects
     _, mask = cv2.threshold(diff, tolerance, 255, cv2.THRESH_BINARY_INV)
     image1 = (image1 * 255).astype(np.uint8)
@@ -32,9 +32,11 @@ def SubtractDominantMotion(image1, image2, threshold, num_iters, tolerance):
     result[idx[0],idx[1],:] = [0, 0, 255]
 
 
-    cv2.imshow("result", result)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    # cv2.imshow("result", result)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+
+    return result
 
 
 #     return result

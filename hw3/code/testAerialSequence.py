@@ -23,12 +23,20 @@ seq = np.load('../data/aerialseq.npy')
 h, w, num_frames = seq.shape
 
 
+
+
+
+h, w, num_frames = seq.shape
+
+
 for i in range(num_frames-1):
     print(f'Frame {i}')
 
     # track optical flow from frame to frame
-    template = seq[:,:,i] * 255
-    img = seq[:,:,i+1] * 255 # image at t+1
+    template = seq[:,:,i]
+    img = seq[:,:,i+1]# image at t+1
+    # result = SubtractDominantMotion(template, img, threshold, num_iters, tolerance)    
 
-    SubtractDominantMotion(template, img, threshold, num_iters, tolerance)    
-    
+    if i % 30 == 0:
+        result = SubtractDominantMotion(template, img, threshold, num_iters, tolerance)    
+        cv2.imwrite(f'aerial-frame{i}.jpg', result)
