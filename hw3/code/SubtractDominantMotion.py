@@ -22,41 +22,20 @@ def SubtractDominantMotion(image1, image2, threshold, num_iters, tolerance):
     diff =  np.abs(image2 - image1)#transf)
 
     tolerance=0.05
-    image1 = image1.astype(np.uint8)
-
-
+    # mask extracts "moving" objects
     _, mask = cv2.threshold(diff, tolerance, 255, cv2.THRESH_BINARY_INV)
-    result = cv2.cvtColor(image1, cv2.COLOR_GRAY2RGB).astype(np.uint8)
-    color= cv2.cvtColor(image1, cv2.COLOR_GRAY2RGB).astype(np.uint8)
+    image1 = (image1 * 255).astype(np.uint8)
 
-    result[mask==0] = (255,0,0)
-    result[mask!=0] = (255,255,255)
-    cv2.imshow("result", color)
+    # convert to rgb, mark moving points as red 
+    result = cv2.cvtColor(image1, cv2.COLOR_GRAY2RGB)
+    idx = np.where(mask==0)
+    result[idx[0],idx[1],:] = [0, 0, 255]
+
+
+    cv2.imshow("result", result)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-    result = cv2.addWeighted(result, 0.5, color,0.5, 0)
 
-
-
-    cv2.imshow("result w", result)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-    # cv2.imwrite("result.jpg", result)
-
-
-    # # if  > threshold, set to black, else white 
-    # _, mask = cv2.threshold(diff, tolerance, 255, cv2.THRESH_BINARY_INV)
-    # color =  cv2.cvtColor(image1, cv2.COLOR_GRAY2RGB).astype(np.uint8)
-    # result = cv2.cvtColor(image1, cv2.COLOR_GRAY2RGB).astype(np.uint8)
-    
-    # result[mask==0] = (255,0,0)
-
-    # result = apply_mask(color, result).astype(np.uint8)
-    # cv2.imshow("result", result)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-    # cv2.imwrite("result.jpg", result)
-    # return 
 
 #     return result
 # # a mask only considers pixels in the original image where the mask is greater than zero.

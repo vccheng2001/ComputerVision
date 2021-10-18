@@ -51,7 +51,7 @@ def LucasKanadeAffine(It, It1, threshold, num_iters, p0 = np.zeros(6)):
 
 
 
-    print('p0', p0)    
+    # print('p0', p0)    
     for iter in range(int(num_iters)):
 
         M =  np.array([[1+p[0], p[1], p[2]], 
@@ -123,7 +123,7 @@ def LucasKanadeAffine(It, It1, threshold, num_iters, p0 = np.zeros(6)):
         p = p + dp
         # Check stopping condition 
         if np.linalg.norm(dp)**2 < threshold:
-            print('below threshold')
+            # print('below threshold')
             break
 
 
