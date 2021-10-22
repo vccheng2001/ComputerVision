@@ -29,18 +29,18 @@ rects = []
 rects_wtc = []
 
 prev_template = None
-for i in range(num_frames-1):
+for i in range(1, num_frames-1):
     print(f'Frame {i}')
 
-    template = seq[:,:,i] * 255
-    img = seq[:,:,i+1] * 255 # image at t+1
+    # for regular LK 
+    template = seq[:,:,i-i] * 255
+    img = seq[:,:,i] * 255 # image at t+1
 
 
-    # only update if not using prev template
+    # for LK WTC: only update if not using prev template
     if prev_template is None:
         update_template = True
-        # track optical flow from frame to frame
-        template_wtc = seq[:,:,i] * 255
+        template_wtc = seq[:,:,i-1] * 255
     else:
         update_template = False
         template_wtc = prev_template
@@ -63,7 +63,23 @@ for i in range(num_frames-1):
     rects_wtc.append(rect_wtc)
 
 
-    if i % 20 == 0:
+
+
+
+    # if i == 1 or i % 100 == 0:
+    #     l,w = rect[2]-rect[0], rect[3]-rect[1]
+    #     plt.figure()
+    #     plt.imshow(seq[:,:,i],cmap='gray')
+    #     bbox0 = patches.Rectangle((int(rects[i-1][0]), int(rects[i-1][1])), l,w,
+    #                              fill=False, edgecolor='red', linewidth=2)
+    #     plt.gca().add_patch(bbox0)
+    #     bbox1 = patches.Rectangle((int(rects_wtc[i-1][0]), int(rects_wtc[i-1][1])), l,w,
+    #                              fill=False, edgecolor='blue', linewidth=2)
+    #     plt.gca().add_patch(bbox1)
+    #     plt.title('Frame %d' % i)
+    #     plt.savefig(f'car_wtc_frame{i}.jpg')
+
+    if i == 1 or i % 100 == 0:
         x1,y1,x2,y2 = map(int, rect)
         x1_wtc,y1_wtc,x2_wtc,y2_wtc= map(int, rect_wtc)
 
@@ -83,13 +99,13 @@ for i in range(num_frames-1):
         # cv2.imshow('img_with_rect',img)
         cv2.imwrite(f'car-wcrt_frame{i}.jpg', img_with_rect_wtc)
         # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
+        cv2.destroyAllWindows()
 
 
 # save all rects as Nx4 matrix
 out = 'carseqrects-wcrt.npy'
 with open(out, 'wb') as f:
     print('Saving.....')
-    np.save(f, rects)
+    np.save(f, rects_wtc)
 
 
