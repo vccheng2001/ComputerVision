@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from  SubtractDominantMotion import *
+import time
 # write your script here, we recommend the above libraries for making your animation
 
 parser = argparse.ArgumentParser()
@@ -21,13 +22,21 @@ h, w, num_frames = seq.shape
 
 
 for i in range(1, num_frames-1):
-    print(f'Frame {i}')
+    
+    start = time.time()
+
 
     # track optical flow from frame to frame
     template = seq[:,:,i-1]
     img = seq[:,:,i]# image at t+1
     # result = SubtractDominantMotion(template, img, threshold, num_iters, tolerance)    
 
-    if i == 1 or i % 30 == 0:
-        result = SubtractDominantMotion(template, img, threshold, num_iters, tolerance)    
-        cv2.imwrite(f'aerial-frame{i}.jpg', result)
+    result = SubtractDominantMotion(template, img, threshold, num_iters, tolerance)    
+
+
+    end = time.time()
+    print(f'frame {i}, time:', end - start)
+
+    # if i == 1 or i % 30 == 0:
+    #     result = SubtractDominantMotion(template, img, threshold, num_iters, tolerance)    
+    #     cv2.imwrite(f'aerial-frame{i}.jpg', result)

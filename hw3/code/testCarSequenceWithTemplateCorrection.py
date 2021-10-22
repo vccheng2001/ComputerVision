@@ -7,7 +7,7 @@ import cv2
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--num_iters', type=int, default=1e4, help='number of iterations of Lucas-Kanade')
-parser.add_argument('--threshold', type=float, default=1e-2, help='dp threshold of Lucas-Kanade for terminating optimization')
+parser.add_argument('--threshold', type=float, default=0.01, help='dp threshold of Lucas-Kanade for terminating optimization')
 args = parser.parse_args()
 num_iters = args.num_iters
 threshold = args.threshold
@@ -83,14 +83,20 @@ for i in range(1, num_frames-1):
         x1,y1,x2,y2 = map(int, rect)
         x1_wtc,y1_wtc,x2_wtc,y2_wtc= map(int, rect_wtc)
 
-        img_with_rect = cv2.rectangle(img=img.copy(),
-                                     pt1=(x1,y1), 
-                                     pt2=(x2,y2), 
-                                     color=(255,0,0), 
-                                     thickness=1)
+        # img_with_rect = cv2.rectangle(img=img.copy(),
+        #                              pt1=(x1,y1), 
+        #                              pt2=(x2,y2), 
+        #                              color=(255,0,0), 
+        #                              thickness=1)
 
 
-        img_with_rect_wtc = cv2.rectangle(img=img_with_rect.copy(),
+        # img_with_rect_wtc = cv2.rectangle(img=img_with_rect.copy(),
+        #                              pt1=(x1_wtc,y1_wtc), 
+        #                              pt2=(x2_wtc,y2_wtc), 
+        #                              color=(0,255,0), 
+        #                              thickness=1)
+
+        img_with_rect_wtc = cv2.rectangle(img=img.copy(),
                                      pt1=(x1_wtc,y1_wtc), 
                                      pt2=(x2_wtc,y2_wtc), 
                                      color=(0,255,0), 
