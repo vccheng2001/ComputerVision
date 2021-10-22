@@ -17,15 +17,6 @@ tolerance = args.tolerance
 seq = np.load('../data/aerialseq.npy')
 
 
-
-
-
-h, w, num_frames = seq.shape
-
-
-
-
-
 h, w, num_frames = seq.shape
 
 
