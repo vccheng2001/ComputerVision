@@ -7,8 +7,8 @@ from SubtractDominantMotion import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--num_iters', type=int, default=1000, help='number of iterations of Lucas-Kanade')
-parser.add_argument('--threshold', type=float, default=4, help='dp threshold of Lucas-Kanade for terminating optimization')
-parser.add_argument('--tolerance', type=float, default=0.2, help='binary threshold of intensity difference when computing the mask')
+parser.add_argument('--threshold', type=float, default=10, help='dp threshold of Lucas-Kanade for terminating optimization')
+parser.add_argument('--tolerance', type=float, default=0.05, help='binary threshold of intensity difference when computing the mask')
 args = parser.parse_args()
 num_iters = args.num_iters
 threshold = args.threshold
