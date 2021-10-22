@@ -51,12 +51,10 @@ def InverseCompositionAffine(It, It1, threshold, num_iters):
     for iter in range(int(num_iters)):
 
         # computes an inverse affine transformation represented by 2×3 matrix M:
-        print('pppp', p)
         # M0,M1,M2,M3,M4,M5= M.flatten()
         p_inv = cv2.invertAffineTransform(p)
-        print('p_inv', p_inv)
 
-        warped_img = cv2.warpAffine(img.copy(), p_inv.copy(), dsize=(template.shape[1],template.shape[0]))
+        warped_img = cv2.warpAffine(img.copy(), p_inv.copy(), dsize=(template.shape[1], template.shape[0]))
 
         # # (2) compute error 
         # warped image depends on p 
@@ -67,10 +65,16 @@ def InverseCompositionAffine(It, It1, threshold, num_iters):
         # (7, 8) Compute dp
         # hessian independent of warp parameters p
         dp = np.linalg.inv(H) @ (sd_T @ error.flatten())
+        dp = dp.reshape(p.shape)
 
+        
         # (9) Update parameters
-        p = p @ (np.linalg.inv(dp))
- 
+        p_matrix = np.vstack((p, [0, 0, 1]))
+        dp_matrix = np.eye(3) + np.vstack((dp, [0,0,0]))
+        p = p_matrix @ (np.linalg.inv(dp_matrix))
+        # get first two rows only
+        p = p[:2,:]
+
         # Check stopping condition 
         if np.linalg.norm(dp)**2 < threshold:
             print("Done")

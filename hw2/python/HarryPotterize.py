@@ -45,6 +45,7 @@ def compositeH(H, template, img, write=True):
     # Mask to extract background 
     mask = cv2.threshold(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), 0, 255, cv2.THRESH_BINARY_INV)[1]
     mask = mask.astype(np.uint8)
+    cv2.imwrite("mask.jpg", mask)
 
     # Mask to extract foreground
     mask_inv = cv2.bitwise_not(mask).astype(np.uint8)
@@ -52,9 +53,15 @@ def compositeH(H, template, img, write=True):
     # Get background, foreground 
     fg = cv2.bitwise_and(img, img, mask=mask_inv)
     bg = cv2.bitwise_and(template, template, mask=mask)
+    cv2.imwrite("fg.jpg", fg)
+    cv2.imwrite("bg.jpg",bg)
 
-    # Add to get composite image (black + anything = anything)
-    composite_img = cv2.add(bg, fg)
+
+    # if fg image all black, leave it black
+    if np.all(fg==0):
+        composite_img = bg
+    else: # Add to get composite image (black + anything = anything)
+        composite_img = cv2.add(bg, fg)
 
     if write:
         cv2.imwrite("composite_img.jpg", composite_img)

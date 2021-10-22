@@ -72,7 +72,7 @@ def main():
         bestH, bestInliers = computeH_ransac(locs1, locs2, opts)
 
         # overlay
-        if count % 5 == 0:
+        if count % 2 == 0:
             composite_img = compositeH(bestH,dst_frame, src_frame, write=False)
             cv2.imwrite(f"frames{count}.jpg", composite_img)
 
