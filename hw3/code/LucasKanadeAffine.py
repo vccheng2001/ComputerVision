@@ -2,6 +2,34 @@ import numpy as np
 from scipy.interpolate import RectBivariateSpline
 from scipy import ndimage
 import cv2
+
+
+def calc_sd_affine(warped_grad, template):
+    # (5) Steepest descent deltaI @ dW/dp
+    x2,y2 = template.shape[1], template.shape[0]
+    # 256, 256
+    sd_size = (y2,x2, 6)
+    # (1x2) @ (2x6) for each pixel
+    sd = np.zeros(sd_size)
+    warped_grad = np.reshape(warped_grad,(y2,x2,2))
+    for r in range(y2): # loop through template height (rows)
+        for c in range(x2): # loop cols
+
+            # for each pixel located at r,c
+            deltI = np.expand_dims(warped_grad[r][c], 0)
+            
+
+            # 1 x 2 @ 2 x  6 = 1 x 6
+            sd[r,c] = np.expand_dims(deltI @ np.array([[c,0,r,0,1,0],
+                                          [0,c,0,r,0,1]]), 0)
+
+            
+    sd = sd.reshape((x2*y2,6))
+    
+    return sd
+
+
+
 def LucasKanadeAffine(It, It1, threshold, num_iters, p0 = np.zeros(6)):
     """
     #     :param It: template image
@@ -43,7 +71,7 @@ def LucasKanadeAffine(It, It1, threshold, num_iters, p0 = np.zeros(6)):
                   [p[3], 1+p[4], p[5]]])
 
 
-        M0,M1,M2,M3,M4,M5= M.flatten()
+        M0,M1,M2,M3,M4,M5 = M.flatten()
 
         warped_img = cv2.warpAffine(img.copy(), M.copy(), dsize=(template.shape[1],template.shape[0]))
 
@@ -51,7 +79,7 @@ def LucasKanadeAffine(It, It1, threshold, num_iters, p0 = np.zeros(6)):
         error = template - warped_img
 
         # (3) warp gradient with W(x,p)
-        x1,y1=0,0
+        x1,y1= 0,0
         x2,y2 = template.shape[1], template.shape[0]
         x1_w, y1_w = M0*x1+M1*y1+M2, M3*x1+M4*y1+M5
         x2_w, y2_w = M0*x2+M1*y2+M2, M3*x2+M4*y2+M5
@@ -88,28 +116,3 @@ def LucasKanadeAffine(It, It1, threshold, num_iters, p0 = np.zeros(6)):
 
     
     return M
-
-def calc_sd_affine(warped_grad, template):
-    # (5) Steepest descent deltaI @ dW/dp
-    x2,y2 = template.shape[1], template.shape[0]
-    # 256, 256
-    sd_size = (y2,x2, 6)
-    # (1x2) @ (2x6) for each pixel
-    sd = np.zeros(sd_size)
-    warped_grad = np.reshape(warped_grad,(y2,x2,2))
-    for r in range(y2): # loop through template height (rows)
-        for c in range(x2): # loop cols
-
-            # for each pixel located at r,c
-            deltI = np.expand_dims(warped_grad[r][c], 0)
-            
-
-            # 1 x 2 @ 2 x  6 = 1 x 6
-            sd[r,c] = np.expand_dims(deltI @ np.array([[c,0,r,0,1,0],
-                                          [0,c,0,r,0,1]]), 0)
-
-            
-    sd = sd.reshape((x2*y2,6))
-    
-    return sd
-

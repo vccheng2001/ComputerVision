@@ -15,12 +15,17 @@ def SubtractDominantMotion(image1, image2, threshold, num_iters, tolerance):
 
     # src: coordinates in the source image
     # dst: coordinates in the output image
-    # M = LucasKanadeAffine(image1, image2, threshold, num_iters, p0 = np.zeros(6))
 
-    M = InverseCompositionAffine(image1, image2, threshold, num_iters)
+    # use this for affine
+    M = LucasKanadeAffine(image1, image2, threshold, num_iters, p0 = np.zeros(6))
+
+    # use this for inverse comp
+    # M = InverseCompositionAffine(image1, image2, threshold, num_iters)
+
+
     transf = warpAffine(image1, M, dsize=(image2.shape[1],image2.shape[0]))
     
-
+    # get difference 
     diff =  np.abs(image2 - transf)
 
     # mask extracts "moving" objects
@@ -40,8 +45,7 @@ def SubtractDominantMotion(image1, image2, threshold, num_iters, tolerance):
     return result
 
 
-#     return result
-# # a mask only considers pixels in the original image where the mask is greater than zero.
+# a mask only considers pixels in the original image where the mask is greater than zero.
 def apply_mask(frame, mask):
     """Apply binary mask to frame, return in-place masked image."""
     return cv2.bitwise_or(frame, frame, mask=mask)
