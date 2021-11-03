@@ -37,10 +37,10 @@ def eightpoint(pts1, pts2, M):
     # scale by dividing by max of image's width, height
     # if x_norm = Tx, F_unnorm = T^T @ F @ T 
 
-    
+
     T = np.eye(3)
     np.fill_diagonal(T, 1/M) # scaling matrix
-    pts1_norm, pts2_norm = pts1 / M, pts2 / M#T @ pts1, T @ pts2
+    pts1_norm, pts2_norm = pts1, pts2# pts1 / M, pts2 / M#T @ pts1, T @ pts2
 
     # A matrix = UDV^T
     # Af = 0, solve SVD for 9-element column vector f
@@ -48,13 +48,15 @@ def eightpoint(pts1, pts2, M):
     A = np.zeros((N,9))
     for i in range(N):
         # http://cs.brown.edu/courses/cs143/proj5/
-        y,x= pts1_norm[i] # one point
-        yp,xp = pts2_norm[i]
+        x, xp = pts2_norm[i][0], pts1_norm[i][0] # one point
+        y, yp = pts2_norm[i][1], pts1_norm[i][1] 
+    
+        
+
         # each pair of corresp points --> one equation 
         A[i] = [x*xp,x*yp,x,y*xp, y*yp, y, xp, yp, 1]
     # http://16720.courses.cs.cmu.edu/lec/two-view_lec15.pdf
 
-    
 
     # SVD on matrix A to get f
     # U:(110,110), VH=(9,9)
@@ -62,8 +64,9 @@ def eightpoint(pts1, pts2, M):
     # least square solution: singular vector 
     # corresponding to smallest singular value of A 
     # last column of V == last row of VH
-    f = VH[8,:]
+    
 
+    f = VH[8,:]
     # Divide by scale
     f = f / f[-1]
 
@@ -78,26 +81,31 @@ def eightpoint(pts1, pts2, M):
 
     # set sigma3 = 0
     Uf, Sf, VfH = np.linalg.svd(F, full_matrices=True)
-    print('Sf vec', Sf)
     Sf[2] = 0
+    Sf_sing_vec = Sf
 
     # create new diag matrix where smallest singular value == 0
-    Sf_new = np.eye(3)
-    np.fill_diagonal(Sf_new, Sf)
+    Sf_sing_matrix = np.eye(3)
+    np.fill_diagonal(Sf_sing_matrix, Sf_sing_vec)
+    print('Sf_sing_matrix', Sf_sing_matrix)
 
     # get rank-2 fundamental matrix
-    F = Uf @ Sf_new @ VfH
+    F = Uf @ Sf_sing_matrix @ VfH
 
     # unscale
+    print('F', F)
     F_unnorm = T.T @ F @ T
 
     # check: 
     print('pts1[0]', pts1[0])
-    p1 = np.concatenate((pts1[0], np.ones(1)), axis=None)
-    p2 = np.concatenate((pts2[0], np.ones(1)), axis=None)
+    p1 = make_homogeneous(pts1[0])
+    p2 = make_homogeneous(pts2[0])
     print('xpi^T @ F @ xi should be 0, is', (p2).T @ F_unnorm @ (p1))
     return F_unnorm
     
+def make_homogeneous(pt):
+    return np.concatenate((pt, np.ones(1)), axis=None)
+
 
     '''
     Fundamental matrix F: 3x3 matrix
