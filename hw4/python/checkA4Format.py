@@ -6,17 +6,26 @@ Written by Chen Kong, 2018.
 import numpy as np
 import matplotlib.pyplot as plt
 import submission as sub
+from helper import * 
+
 data = np.load('../data/some_corresp.npz')
 im1 = plt.imread('../data/im1.png')
 im2 = plt.imread('../data/im2.png')
 
+
 N = data['pts1'].shape[0]
 M = 640
+
+
+
+
 
 # 2.1
 F8 = sub.eightpoint(data['pts1'], data['pts2'], M)
 assert F8.shape == (3, 3), 'eightpoint returns 3x3 matrix'
+displayEpipolarF(im1, im2, F8)
 
+exit(0)
 # 3.1
 C1 = np.concatenate([np.random.rand(3, 3), np.ones([3, 1])], axis=1)
 C2 = np.concatenate([np.random.rand(3, 3), np.ones([3, 1])], axis=1)

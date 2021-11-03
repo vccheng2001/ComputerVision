@@ -71,6 +71,7 @@ def _epipoles(E):
     e2 = V[-1, :]
     return e1, e2
 
+
 def displayEpipolarF(I1, I2, F):
     e1, e2 = _epipoles(F)
 
@@ -114,6 +115,7 @@ def displayEpipolarF(I1, I2, F):
         ax1.plot(x, y, '*', MarkerSize=6, linewidth=2)
         ax2.plot([xs, xe], [ys, ye], linewidth=2)
         plt.draw()
+
 
 
 

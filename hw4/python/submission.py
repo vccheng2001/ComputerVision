@@ -13,6 +13,7 @@ Replace 'pass' by your implementation.
 import numpy as np
 import cv2
 from scipy.sparse.linalg import svds, eigs
+from helper import *
 
 '''
 Q2.1: Eight Point Algorithm
@@ -32,29 +33,71 @@ def eightpoint(pts1, pts2, M):
 
     x'^TFx = 0
     '''
-
     N, _ = pts1.shape
+    # scale by dividing by max of image's width, height
+    # if x_norm = Tx, F_unnorm = T^T @ F @ T 
+
+    
+    T = np.eye(3)
+    np.fill_diagonal(T, 1/M) # scaling matrix
+    pts1_norm, pts2_norm = pts1 / M, pts2 / M#T @ pts1, T @ pts2
 
     # A matrix = UDV^T
     # Af = 0, solve SVD for 9-element column vector f
+    assert N > 8 #(overdetermined)
     A = np.zeros((N,9))
     for i in range(N):
-        u, v = pts1[i]
-        up, vp, = pts2[i]
-        A[i] = [up*u,up*v,up,vp*u, vp, vp*v, u, v, 1]
+        # http://cs.brown.edu/courses/cs143/proj5/
+        y,x= pts1_norm[i] # one point
+        yp,xp = pts2_norm[i]
+        # each pair of corresp points --> one equation 
+        A[i] = [x*xp,x*yp,x,y*xp, y*yp, y, xp, yp, 1]
+    # http://16720.courses.cs.cmu.edu/lec/two-view_lec15.pdf
 
-
+    
 
     # SVD on matrix A to get f
+    # U:(110,110), VH=(9,9)
     U, S, VH = np.linalg.svd(A, full_matrices=True)
+    # least square solution: singular vector 
+    # corresponding to smallest singular value of A 
+    # last column of V == last row of VH
     f = VH[8,:]
 
     # Divide by scale
-    f = (f / f[-1])
+    f = f / f[-1]
+
+    # A: (N x 9), f: (9 x 1)
+    print('A @ f should be 0, is', A @ f)
+    
     # 3x3 fundamental matrix F
     F = f.reshape(3,3)
 
-    return F
+    # enforce singularity condition of F before unscaling 
+    # make sure F is rank 2
+
+    # set sigma3 = 0
+    Uf, Sf, VfH = np.linalg.svd(F, full_matrices=True)
+    print('Sf vec', Sf)
+    Sf[2] = 0
+
+    # create new diag matrix where smallest singular value == 0
+    Sf_new = np.eye(3)
+    np.fill_diagonal(Sf_new, Sf)
+
+    # get rank-2 fundamental matrix
+    F = Uf @ Sf_new @ VfH
+
+    # unscale
+    F_unnorm = T.T @ F @ T
+
+    # check: 
+    print('pts1[0]', pts1[0])
+    p1 = np.concatenate((pts1[0], np.ones(1)), axis=None)
+    p2 = np.concatenate((pts2[0], np.ones(1)), axis=None)
+    print('xpi^T @ F @ xi should be 0, is', (p2).T @ F_unnorm @ (p1))
+    return F_unnorm
+    
 
     '''
     Fundamental matrix F: 3x3 matrix
@@ -98,9 +141,42 @@ Q3.2: Triangulate a set of 2D coordinates in the image to a set of 3D points.
     Output: P, the Nx3 matrix with the corresponding 3D points per row
             err, the reprojection error.
 '''
+
+
+''' Planar triangulation
+- collection of N 2D points vertex=(N,2)
+- collection of triangles faces (M, 2) 
+
+Building triangulation of convex hull of points
+Compute Delaunay triangulation of points
+https://www.numerical-tours.com/matlab/meshproc_1_basics_2d/
+Iterative filtering 
+
+
+Computer Vision
+
+Structure: scene geometry
+Motion: camera geometry
+
+Reconstruction: estimate both, 2D to 2D corresp
+Triangulation: know motion, 2D to 2D
+Pose Estimation: know structure, 3D to 2D 
+
+http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
+- Given set of noisy matched points {xi, x'i}
+- Given camera matrices C1, C2
+- estimate 3D point X
+- x = PX (can we compute X from single corresp x?)
+- since meas are noisy, there's no point satisfying both x'=P'X and x=PX
+-   need to find line of best fit
+- since homogeneous coords, solve up to a scale (x=alphaPX)
+'''
 def triangulate(C1, pts1, C2, pts2):
     # Replace pass by your implementation
+
+
     pass
+
 
 
 '''
