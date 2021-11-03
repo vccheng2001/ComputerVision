@@ -97,12 +97,13 @@ def eightpoint(pts1, pts2, M):
     F_unnorm = T.T @ F @ T
 
     # check: 
-    print('pts1[0]', pts1[0])
+    # print('pts1[0]', pts1[0])
     p1 = make_homogeneous(pts1[0])
     p2 = make_homogeneous(pts2[0])
     print('xpi^T @ F @ xi should be 0, is', (p2).T @ F_unnorm @ (p1))
     return F_unnorm
     
+
 def make_homogeneous(pt):
     return np.concatenate((pt, np.ones(1)), axis=None)
 

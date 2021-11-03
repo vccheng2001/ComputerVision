@@ -12,6 +12,10 @@ data = np.load('../data/some_corresp.npz')
 im1 = plt.imread('../data/im1.png')
 im2 = plt.imread('../data/im2.png')
 
+# test points
+p1, p2 = data['pts1'][0], data['pts2'][0]
+p1 = sub.make_homogeneous(p1)
+p2 = sub.make_homogeneous(p2)
 
 N = data['pts1'].shape[0]
 M = 640
@@ -23,9 +27,32 @@ M = 640
 # 2.1
 F8 = sub.eightpoint(data['pts1'], data['pts2'], M)
 assert F8.shape == (3, 3), 'eightpoint returns 3x3 matrix'
-displayEpipolarF(im1, im2, F8)
+# displayEpipolarF(im1, im2, F8)
 
-exit(0)
+np.savez('q2_1.npz', F8)
+
+data = np.load('../data/intrinsics.npz')
+K1, K2 = data['K1'], data['K2']
+
+# calculate essential matrix
+E = sub.essentialMatrix(F8, K1, K2)
+print('Essential matrix: ', E)
+np.savez('q3_1.npz', E)
+
+print('Checking essential matrix, should be 0', p2.T @ E @ p1)
+
+
+# projective camera matrices M1, M2 
+# given M1 is fixed at [I, 0]
+# M2 can be retrieved up to a scale, 4-fold rotation ambiguityt
+# M2 = [R | t]
+
+I = np.eye(3)
+M1 = np.hstack((I, np.zeros((3,1))))
+print('M1', M1)
+possible_M2 = camera2(E) 
+print('possible M2', possible_M2)
+
 # 3.1
 C1 = np.concatenate([np.random.rand(3, 3), np.ones([3, 1])], axis=1)
 C2 = np.concatenate([np.random.rand(3, 3), np.ones([3, 1])], axis=1)
