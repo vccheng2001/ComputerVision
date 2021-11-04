@@ -182,10 +182,77 @@ http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
 '''
 def triangulate(C1, pts1, C2, pts2):
     # Replace pass by your implementation
+    # C1: 3x4
+    # C2: 3x4 
+    # return: w = [x y z]
+    # 
+    # 
+    N, _ = pts1.shape # N x 3
+    
+
+    # least-squares triangulation
+    '''
+    for each point i, solve for 3D coordinates 
+    wi = [xi, yi, zi] such that when they 
+    are projected back to two images, they are
+    close to original 2D points. 
 
 
-    pass
+    '''
+    N, _ = pts1.shape
+    
 
+    # (3x4)@(4x1)    pts1: (3x1) homog
+    # C1 @ wi_homog should be lambda*pts1
+    # C2 @ wi_homog should be lambda*pts2
+
+    # for each corresp point pair, A is a 4x4 matrix 
+
+    # for each point i, wi is a (4x1) homog. world coord
+    w = np.zeros((N,4,1))
+    for i in range(N):
+
+        # pts1 -> C1
+        # pts2 -> C2 
+
+        x, xp = pts2[i][0], pts1[i][0] # one point
+        y, yp = pts2[i][1], pts1[i][1] 
+
+
+        # for each point i,
+        # Ai is 4x4 matrix, can solve wi up to scale
+        Ai = np.array([[x*C1[2] - C1[0]],
+                        [y*C1[2] - C1[1]],
+                        [xp*C2[2] - C2[0]],
+                        [yp*C2[2] - C2[1]]])
+        
+        eigenvals, eigenvecs = np.linalg.eig(Ai.T@Ai)
+
+        min_eigenval_idx = np.argmin(eigenvals)
+        min_eigenval = eigenvals[min_eigenval_idx]
+
+        # NOTE: stores in ith column of np.linalg.eig, not row! 
+        # (this is why transpose is necessary)
+        # 4 x 1
+        wi = eigenvecs.T[min_eigenval_idx]
+        # make homogeneous by dividing by scale 
+        wi = (wi/ wi[-1])
+
+        assert(wi.shape == (4,1))
+        w[i] = wi
+        # solve for 3D world points wi (4x1)
+        # wi_homog = make_homogeneous(wi)
+        # w[i] = wi_homog
+
+        # assert(np.isclose(pts1, C1 @ wi_homog))
+        # assert(np.isclose(pts2, C2 @ wi_homog))
+
+    # Ai: 4x4 matrix, wi: 4x1 vector of 3D coords in homog form 
+    # Ai @ wi = 0 for each point 
+    # (4x4) @ (4x1) = (4x1)
+    # solve for each wi
+
+    return w
 
 
 '''
