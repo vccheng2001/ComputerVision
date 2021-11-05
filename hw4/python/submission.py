@@ -187,6 +187,8 @@ def triangulate(C1, pts1, C2, pts2):
     # return: w = [x y z]
     # 
     # 
+
+    err = 0 
     N, _ = pts1.shape # N x 3
     
 
@@ -215,16 +217,16 @@ def triangulate(C1, pts1, C2, pts2):
         # pts1 -> C1
         # pts2 -> C2 
 
-        x, xp = pts2[i][0], pts1[i][0] # one point
-        y, yp = pts2[i][1], pts1[i][1] 
+        xi, xpi = pts2[i][0], pts1[i][0] # one point
+        yi, ypi = pts2[i][1], pts1[i][1] 
 
 
         # for each point i,
         # Ai is 4x4 matrix, can solve wi up to scale
-        Ai = np.array([[x*C1[2] - C1[0]],
-                        [y*C1[2] - C1[1]],
-                        [xp*C2[2] - C2[0]],
-                        [yp*C2[2] - C2[1]]])
+        Ai = np.array([[xi*C1[2] - C1[0]],
+                        [yi*C1[2] - C1[1]],
+                        [xpi*C2[2] - C2[0]],
+                        [ypi*C2[2] - C2[1]]])
         
         eigenvals, eigenvecs = np.linalg.eig(Ai.T@Ai)
 
@@ -239,20 +241,28 @@ def triangulate(C1, pts1, C2, pts2):
         wi = (wi/ wi[-1])
 
         assert(wi.shape == (4,1))
-        w[i] = wi
+        w[i] = wi[:3, :]
         # solve for 3D world points wi (4x1)
-        # wi_homog = make_homogeneous(wi)
+        wi_homog = make_homogeneous(wi)
         # w[i] = wi_homog
 
         # assert(np.isclose(pts1, C1 @ wi_homog))
         # assert(np.isclose(pts2, C2 @ wi_homog))
 
-    # Ai: 4x4 matrix, wi: 4x1 vector of 3D coords in homog form 
-    # Ai @ wi = 0 for each point 
-    # (4x4) @ (4x1) = (4x1)
-    # solve for each wi
+        # Ai: 4x4 matrix, wi: 4x1 vector of 3D coords in homog form 
+        # Ai @ wi = 0 for each point 
+        # (4x4) @ (4x1) = (4x1)
+        # solve for each wi
 
-    return w
+        xi_hat = C1 @ wi_homog
+        xpi_hat = C2 @ wi_homog
+
+        err_i = np.linalg.norm(xi-xi_hat)**2 + np.linalg(xpi-xpi_hat)**2
+        err += err_i
+
+
+    # w: (N, 3)
+    return w, err
 
 
 '''

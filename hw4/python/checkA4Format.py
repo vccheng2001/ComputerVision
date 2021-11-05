@@ -42,16 +42,6 @@ np.savez('q3_1.npz', E)
 print('Checking essential matrix, should be 0', p2.T @ E @ p1)
 
 
-# projective camera matrices M1, M2 
-# given M1 is fixed at [I, 0]
-# M2 can be retrieved up to a scale, 4-fold rotation ambiguityt
-# M2 = [R | t]
-
-I = np.eye(3)
-M1 = np.hstack((I, np.zeros((3,1))))
-print('M1', M1)
-possible_M2 = camera2(E) 
-print('possible M2', possible_M2)
 
 # 3.1
 C1 = np.concatenate([np.random.rand(3, 3), np.ones([3, 1])], axis=1)
@@ -60,6 +50,8 @@ C2 = np.concatenate([np.random.rand(3, 3), np.ones([3, 1])], axis=1)
 P, err = sub.triangulate(C1, data['pts1'], C2, data['pts2'])
 assert P.shape == (N, 3), 'triangulate returns Nx3 matrix P'
 assert np.isscalar(err), 'triangulate returns scalar err'
+
+
 
 # 4.1
 x2, y2 = sub.epipolarCorrespondence(im1, im2, F8, data['pts1'][0, 0], data['pts1'][0, 1])
