@@ -36,6 +36,7 @@ def eightpoint(pts1, pts2, M):
     N, _ = pts1.shape
     # scale by dividing by max of image's width, height
     T = np.eye(3)
+    # don't scale last coord (homog!!)
     np.fill_diagonal(T, [1/M, 1/M, 1])
 
     pts1_norm, pts2_norm = pts1 / M, pts2 / M
