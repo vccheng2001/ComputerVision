@@ -235,15 +235,64 @@ Q4.1: 3D visualization of the temple images.
             
 '''
 def epipolarCorrespondence(im1, im2, F, x1, y1):
-    # # Replace pass by your implementation
-    # im1 = 
-    # im2 = 
-    # F = 
-    # x1 = 
-    # y1 = 
 
-    # window similarity 
-    pass
+    '''
+    given (x1,y1) pixel in im1
+    return pixel corresponding to (x1,y1) in im2
+
+    use F to search over set of pixels lying along epipolar line
+    given F,x: find xp
+    '''
+    print('x1, y1', (x1,y1))
+    # get window around pixel (x1, y1)
+    win1 = getWindow(im1, (x1,y1))
+
+    x = np.array([x1,y1,1])
+    lp = F @ x # pt2 must lie on this epipolar line
+
+    # points along lp
+    pts = getPointsAlongLine(im2, lp)
+    
+    # best distance, best pt in image 2
+    bestDist = np.inf
+    bestPt = None
+
+    # for each point along epipolar line l', get dist 
+    pts = pts[1:-1, :]
+    for pt in pts:
+        if pt[0] == 0 or pt[1] == 0: continue
+        win2 = getWindow(im2, pt)
+        dist = computeWindowDist(win1, win2) 
+        if dist < bestDist:
+            bestDist = dist
+            bestPt = pt
+
+    print('bestDist', bestDist)
+    print('bestPt', bestPt)
+    return bestPt # (x2, y2)
+
+        
+    
+
+
+def getWindow(im, pixel, wsize=4):
+    cx, cy = pixel
+    cx, cy = int(cx), int(cy)
+
+    window = im[cy-(wsize//2):cy+(wsize//2), cx-(wsize//2):cx+(wsize//2)]
+    return window
+'''
+Computes distance between two windows' brightness
+'''
+def computeWindowDist(win1, win2):
+    # flatten into 1D vector 
+    win1 = win1.flatten()
+    win2 = win2.flatten()
+
+    # Euclidean dist 
+    dist = np.linalg.norm(win1 - win2)
+    return dist 
+
 
 '''
 Q5.1: Extra Credit RANSAC method.

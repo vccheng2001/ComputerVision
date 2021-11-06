@@ -119,6 +119,40 @@ def displayEpipolarF(I1, I2, F):
 
 
 
+def getPointsAlongLine(im, l):
+    sy, sx, _ = im.shape     
+    # l = [lx, ly, lz]
+    s = np.sqrt(l[0]**2+l[1]**2)
+
+    if s==0:
+        print('Zero line vector')
+
+    l = l/s
+
+    if l[0] != 0:
+        ye = sy-1
+        ys = 0
+        xe = -(l[1] * ye + l[2])/l[0]
+        xs = -(l[1] * ys + l[2])/l[0]
+    else:
+        xe = sx-1
+        xs = 0
+        ye = -(l[0] * xe + l[2])/l[1]
+        ys = -(l[0] * xs + l[2])/l[1]
+
+    # get points along line 
+    num_points = 25
+    xrange = np.linspace(xs, xe, num_points)
+    yrange = np.linspace(ys, ye, num_points)
+
+    pts = np.stack((xrange, yrange), axis=1)
+    return pts
+
+
+
+
+
+
 
 def camera2(E):
     U,S,V = np.linalg.svd(E)
