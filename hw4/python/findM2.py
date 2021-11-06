@@ -39,35 +39,40 @@ E = sub.essentialMatrix(F8, K1, K2)
 M1 = np.hstack((np.eye(3), np.zeros((3,1))))
 possible_M2 = camera2(E) 
 
-# find the correct M2
-# test four solutions through triangulations 
-# returns (Nx3) world coordinates 
-best_M2 = None
-best_err = np.inf
-C2 = None 
-best_w = None
-for i in range(4):
-    print(f'Trying M2 #{i}.......')
-    # candidate M2 
-    M2 = possible_M2[:,:,i]
-    print('M', M1.shape, M2.shape) # 4 x 4 
-    # mult given intrinsics matrices with 
-    # solution for canonical camera matrices 
-    # to get final camera matrices 
-    # get camera matrices 
-    C2 = K2 @ M2 
-    C1 = K1 @ M1 
-    w, err = sub.triangulate(C1, pts1, C2, pts2)
-    print(f'Got error: {err}')
-    if err < best_err:
-        best_err = err 
-        best_M2 = M2 
-        best_w = w
-        best_C2 = C2 
+
+def getBestM2(M1, possible_M2, pts1, pts2, C1, C2):
+    # find the correct M2
+    # test four solutions through triangulations 
+    # returns (Nx3) world coordinates 
+    best_M2 = None
+    best_err = np.inf
+    C2 = None 
+    best_w = None
+    for i in range(4):
+        # print(f'Trying M2 #{i}.......')
+        # candidate M2 
+        M2 = possible_M2[:,:,i]
+        # print('M', M1.shape, M2.shape) # 4 x 4 
+        # mult given intrinsics matrices with 
+        # solution for canonical camera matrices 
+        # to get final camera matrices 
+        # get camera matrices 
+        C2 = K2 @ M2 
+        C1 = K1 @ M1 
+        w, err = sub.triangulate(C1, pts1, C2, pts2)
+        # print(f'Got error: {err}')
+        if err < best_err:
+            best_err = err 
+            best_M2 = M2 
+            best_w = w
+            best_C2 = C2 
+    return best_M2 
 
 # p1, p2 = pts1[0], pts2[0]
 # print(f'image points: {p1}, {p2}')
 # print(f'projected 3d: {best_w[0]}')
-print(f'Best err: {best_err}, best_M2: {best_M2}')
-# Print saving best M2
-np.savez('q3_3.npz', best_M2, best_C2, best_w)
+
+
+# print(f'Best err: {best_err}, best_M2: {best_M2}')
+# # Print saving best M2
+# np.savez('q3_3.npz', best_M2, best_C2, best_w)

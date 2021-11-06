@@ -21,6 +21,8 @@ Q2.1: Eight Point Algorithm
             pts2, Nx2 Matrix
             M, a scalar parameter computed as max (imwidth, imheight)
     Output: F, the fundamental matrix
+
+    Given set of matched image points pts1, pts2, find fundamental matrix 
 '''
 def eightpoint(pts1, pts2, M):
     # Replace pass by your implementation
@@ -243,7 +245,6 @@ def epipolarCorrespondence(im1, im2, F, x1, y1):
     use F to search over set of pixels lying along epipolar line
     given F,x: find xp
     '''
-    print('x1, y1', (x1,y1))
     # get window around pixel (x1, y1)
     win1 = getWindow(im1, (x1,y1))
 
@@ -267,8 +268,8 @@ def epipolarCorrespondence(im1, im2, F, x1, y1):
             bestDist = dist
             bestPt = pt
 
-    print('bestDist', bestDist)
-    print('bestPt', bestPt)
+    # print('bestDist', bestDist)
+    # print('bestPt', bestPt)
     return bestPt # (x2, y2)
 
         
