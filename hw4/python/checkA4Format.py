@@ -58,8 +58,9 @@ assert np.isscalar(err), 'triangulate returns scalar err'
 print('********* EPIPOLAR CORRESPONDENCES *********')
 x2, y2 = sub.epipolarCorrespondence(im1, im2, F8, data['pts1'][0, 0], data['pts1'][0, 1])
 
-assert np.isscalar(x2) & np.isscalar(y2), 'epipolarCoorespondence returns x & y coordinates'
-print('EPIPOLAR MATCH GUI')
+assert np.isscalar(x2) & np.isscalar(y2), 'epipolarCorrespondence returns x & y coordinates'
+np.savez('q4_1.npz', F8, data['pts1'][0, 0], data['pts1'][0, 1])
+
 epipolarMatchGUI(im1, im2, F8)
 
 # 5.1
