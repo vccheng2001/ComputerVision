@@ -100,7 +100,7 @@ def eightpoint(pts1, pts2, M):
     # print('pts1[0]', pts1[0])
     p1 = make_homogeneous(pts1[0])
     p2 = make_homogeneous(pts2[0])
-    print('xpi^T @ F @ xi should be 0, is', (p2).T @ F_unnorm @ (p1))
+    # print('xpi^T @ F @ xi should be 0, is', (p2).T @ F_unnorm @ (p1))
     return F_unnorm
     
 
@@ -184,9 +184,7 @@ def triangulate(C1, pts1, C2, pts2):
     # Replace pass by your implementation
     # C1: 3x4
     # C2: 3x4 
-    # return: w = [x y z]
-    # 
-    # 
+    # return: w = [x y z 1]
 
     err = 0 
     N, _ = pts1.shape # N x 3
@@ -217,47 +215,38 @@ def triangulate(C1, pts1, C2, pts2):
         # pts1 -> C1
         # pts2 -> C2 
 
-        xi, xpi = pts2[i][0], pts1[i][0] # one point
-        yi, ypi = pts2[i][1], pts1[i][1] 
-
+        xi, yi = pts1[i]
+        xpi, ypi = pts2[i] 
+        
 
         # for each point i,
         # Ai is 4x4 matrix, can solve wi up to scale
-        Ai = np.array([[xi*C1[2] - C1[0]],
-                        [yi*C1[2] - C1[1]],
-                        [xpi*C2[2] - C2[0]],
-                        [ypi*C2[2] - C2[1]]])
+
+        Ai = np.array([xi*C1[2] - C1[0],
+                        yi*C1[2] - C1[1],
+                        xpi*C2[2] - C2[0],
+                        ypi*C2[2] - C2[1]])
         
+        # Method 1: eigenvec assoc w/smallest eigenval of Ai^T @ Ai 
         eigenvals, eigenvecs = np.linalg.eig(Ai.T@Ai)
-
         min_eigenval_idx = np.argmin(eigenvals)
-        min_eigenval = eigenvals[min_eigenval_idx]
-
         # NOTE: stores in ith column of np.linalg.eig, not row! 
         # (this is why transpose is necessary)
         # 4 x 1
         wi = eigenvecs.T[min_eigenval_idx]
-        # make homogeneous by dividing by scale 
+        # make homogeneous (scale == 1) by dividing by scale 
         wi = (wi/ wi[-1])
+        wi = np.expand_dims(wi, axis=1)
+        w[i] = wi 
 
-        assert(wi.shape == (4,1))
-        w[i] = wi[:3, :]
-        # solve for 3D world points wi (4x1)
-        wi_homog = make_homogeneous(wi)
-        # w[i] = wi_homog
+        # project 3D back to 2D image points (p)
+        # (Cam intrinsics @ Rot/Trans to World) @ World point = projected image point
+        pts1i_hat = C1 @ wi # C1 @ wi = (K1M1)@wi = (K1@[I|0]) @ wi
+        pts2i_hat = C2 @ wi # C2 @ wi = (K2M2)@wi = (K2@[R|t]) @ wi
 
-        # assert(np.isclose(pts1, C1 @ wi_homog))
-        # assert(np.isclose(pts2, C2 @ wi_homog))
-
-        # Ai: 4x4 matrix, wi: 4x1 vector of 3D coords in homog form 
-        # Ai @ wi = 0 for each point 
-        # (4x4) @ (4x1) = (4x1)
-        # solve for each wi
-
-        xi_hat = C1 @ wi_homog
-        xpi_hat = C2 @ wi_homog
-
-        err_i = np.linalg.norm(xi-xi_hat)**2 + np.linalg(xpi-xpi_hat)**2
+        # compare with original pts1[i], pts2[i]
+        # sum over all points 
+        err_i = np.linalg.norm(pts1[i]-pts1i_hat)**2 + np.linalg.norm(pts2[i]-pts2i_hat)**2
         err += err_i
 
 
@@ -274,22 +263,32 @@ Q4.1: 3D visualization of the temple images.
             y1, y-coordinates of a pixel on im1
     Output: x2, x-coordinates of the pixel on im2
             y2, y-coordinates of the pixel on im2
-
+            
 '''
 def epipolarCorrespondence(im1, im2, F, x1, y1):
-    # Replace pass by your implementation
+    # # Replace pass by your implementation
+    # im1 = 
+    # im2 = 
+    # F = 
+    # x1 = 
+    # y1 = 
     pass
 
 '''
 Q5.1: Extra Credit RANSAC method.
     Input:  pts1, Nx2 Matrix
             pts2, Nx2 Matrix
-            M, a scaler parameter
+            M, a scalar parameter
     Output: F, the fundamental matrix
             inliers, Nx1 bool vector set to true for inliers
 '''
 def ransacF(pts1, pts2, M, nIters=1000, tol=0.42):
     # Replace pass by your implementation
+
+
+
+    
+
     pass
 
 '''
