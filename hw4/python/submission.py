@@ -14,7 +14,7 @@ import numpy as np
 import cv2
 from scipy.sparse.linalg import svds, eigs
 from helper import *
-
+from util import *
 '''
 Q2.1: Eight Point Algorithm
     Input:  pts1, Nx2 Matrix
@@ -35,12 +35,10 @@ def eightpoint(pts1, pts2, M):
     '''
     N, _ = pts1.shape
     # scale by dividing by max of image's width, height
-    # if x_norm = Tx, F_unnorm = T^T @ F @ T 
-
-
     T = np.eye(3)
-    np.fill_diagonal(T, 1/M) # scaling matrix
-    pts1_norm, pts2_norm = pts1, pts2# pts1 / M, pts2 / M#T @ pts1, T @ pts2
+    np.fill_diagonal(T, [1/M, 1/M, 1])
+
+    pts1_norm, pts2_norm = pts1 / M, pts2 / M
 
     # A matrix = UDV^T
     # Af = 0, solve SVD for 9-element column vector f
@@ -50,8 +48,6 @@ def eightpoint(pts1, pts2, M):
         # http://cs.brown.edu/courses/cs143/proj5/
         x, xp = pts2_norm[i][0], pts1_norm[i][0] # one point
         y, yp = pts2_norm[i][1], pts1_norm[i][1] 
-    
-        
 
         # each pair of corresp points --> one equation 
         A[i] = [x*xp,x*yp,x,y*xp, y*yp, y, xp, yp, 1]
@@ -61,46 +57,13 @@ def eightpoint(pts1, pts2, M):
     # SVD on matrix A to get f
     # U:(110,110), VH=(9,9)
     U, S, VH = np.linalg.svd(A, full_matrices=True)
-    # least square solution: singular vector 
-    # corresponding to smallest singular value of A 
-    # last column of V == last row of VH
-    
+    f = VH[-1,:].reshape(3,3)
+    F = refineF(f, pts1_norm, pts2_norm)
 
-    f = VH[8,:]
-    # Divide by scale
-    f = f / f[-1]
-
-    # A: (N x 9), f: (9 x 1)
-    print('A @ f should be 0, is', A @ f)
-    
-    # 3x3 fundamental matrix F
-    F = f.reshape(3,3)
-
-    # enforce singularity condition of F before unscaling 
-    # make sure F is rank 2
-
-    # set sigma3 = 0
-    Uf, Sf, VfH = np.linalg.svd(F, full_matrices=True)
-    Sf[2] = 0
-    Sf_sing_vec = Sf
-
-    # create new diag matrix where smallest singular value == 0
-    Sf_sing_matrix = np.eye(3)
-    np.fill_diagonal(Sf_sing_matrix, Sf_sing_vec)
-    print('Sf_sing_matrix', Sf_sing_matrix)
-
-    # get rank-2 fundamental matrix
-    F = Uf @ Sf_sing_matrix @ VfH
 
     # unscale
-    print('F', F)
     F_unnorm = T.T @ F @ T
 
-    # check: 
-    # print('pts1[0]', pts1[0])
-    p1 = make_homogeneous(pts1[0])
-    p2 = make_homogeneous(pts2[0])
-    # print('xpi^T @ F @ xi should be 0, is', (p2).T @ F_unnorm @ (p1))
     return F_unnorm
     
 
@@ -209,7 +172,7 @@ def triangulate(C1, pts1, C2, pts2):
     # for each corresp point pair, A is a 4x4 matrix 
 
     # for each point i, wi is a (4x1) homog. world coord
-    w = np.zeros((N,4,1))
+    w = np.zeros((N,3))
     for i in range(N):
 
         # pts1 -> C1
@@ -235,14 +198,19 @@ def triangulate(C1, pts1, C2, pts2):
         # 4 x 1
         wi = eigenvecs.T[min_eigenval_idx]
         # make homogeneous (scale == 1) by dividing by scale 
-        wi = (wi/ wi[-1])
-        wi = np.expand_dims(wi, axis=1)
-        w[i] = wi 
+        wi = (wi / wi[-1])
+        w[i] = wi[:3]
 
         # project 3D back to 2D image points (p)
         # (Cam intrinsics @ Rot/Trans to World) @ World point = projected image point
+        # this is 2D homogeneous 
         pts1i_hat = C1 @ wi # C1 @ wi = (K1M1)@wi = (K1@[I|0]) @ wi
         pts2i_hat = C2 @ wi # C2 @ wi = (K2M2)@wi = (K2@[R|t]) @ wi
+
+        # make nonhomog
+        pts1i_hat = (pts1i_hat / pts1i_hat[-1])[:2]
+        pts2i_hat = (pts2i_hat / pts2i_hat[-1])[:2]
+
 
         # compare with original pts1[i], pts2[i]
         # sum over all points 
@@ -272,6 +240,8 @@ def epipolarCorrespondence(im1, im2, F, x1, y1):
     # F = 
     # x1 = 
     # y1 = 
+
+    # window similarity 
     pass
 
 '''

@@ -31,8 +31,8 @@ assert F8.shape == (3, 3), 'eightpoint returns 3x3 matrix'
 
 np.savez('q2_1.npz', F8)
 
-data = np.load('../data/intrinsics.npz')
-K1, K2 = data['K1'], data['K2']
+intrinsics = np.load('../data/intrinsics.npz')
+K1, K2 = intrinsics['K1'], intrinsics['K2']
 
 # calculate essential matrix
 E = sub.essentialMatrix(F8, K1, K2)
@@ -50,6 +50,7 @@ C2 = np.concatenate([np.random.rand(3, 3), np.ones([3, 1])], axis=1)
 P, err = sub.triangulate(C1, data['pts1'], C2, data['pts2'])
 assert P.shape == (N, 3), 'triangulate returns Nx3 matrix P'
 assert np.isscalar(err), 'triangulate returns scalar err'
+
 
 
 
