@@ -141,7 +141,7 @@ def getPointsAlongLine(im, l):
         ys = -(l[0] * xs + l[2])/l[1]
 
     # get points along line 
-    num_points = 25
+    num_points = 100
     xrange = np.linspace(xs, xe, num_points)
     yrange = np.linspace(ys, ye, num_points)
 
@@ -172,6 +172,8 @@ def camera2(E):
     return M2s
 
 def epipolarMatchGUI(I1, I2, F):
+    clicked = []
+    matched = []
     e1, e2 = _epipoles(F)
 
     sy, sx, _ = I2.shape
@@ -187,6 +189,7 @@ def epipolarMatchGUI(I1, I2, F):
     while True:
         plt.sca(ax1)
         x, y = plt.ginput(1, mouse_stop=2)[0]
+        
 
         xc = int(x)
         yc = int(y)
@@ -216,5 +219,11 @@ def epipolarMatchGUI(I1, I2, F):
 
         # draw points
         x2, y2 = sub.epipolarCorrespondence(I1, I2, F, xc, yc)
+
+        clicked.append((xc,yc))
+        matched.append((x2,y2))
         ax2.plot(x2, y2, 'ro', MarkerSize=8, linewidth=2)
         plt.draw()
+
+    # np.savez('q4_1.npz', F=F, pts1=clicked, pts2=matched)
+

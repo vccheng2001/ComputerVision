@@ -22,6 +22,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import submission as sub
 from helper import * 
 from findM2 import *
+import plotly.graph_objects as go
 
 data = np.load('../data/templeCoords.npz')
 data_some_corresp = np.load('../data/some_corresp.npz')
@@ -32,12 +33,10 @@ im2 = plt.imread('../data/im2.png')
 # 288 selected points in im1
 x1, y1 = data['x1'], data['y1']
 pts1 = np.hstack((x1,y1))
-
 N, _ = pts1.shape
 M = max(im1.shape)
 
-# Get Fundamental Matrix given set of image correspondences 
-# F8 = sub.eightpoint(pts1, pts2, M)
+# Get Fundamental Matrix given random set of image correspondences 
 F8 = sub.eightpoint(data_some_corresp['pts1'], data_some_corresp['pts2'], M)
 
 # Camera Intrinsics 
@@ -47,38 +46,42 @@ K1, K2 = intrinsics['K1'], intrinsics['K2']
 # Essential matrix from Fundamental Matrix, Camera Intrinsics
 E = sub.essentialMatrix(F8, K1, K2)
 
-x1s, y1s, x2s, y2s = [],[], [], []
 # Epipolar correspondences 
+x1s, y1s, x2s, y2s = [],[], [], []
 for x1,y1 in pts1:
-    x2, y2 = sub.epipolarCorrespondence(im1, im2, F8, x1, y1)
+    x2, y2 = sub.epipolarCorrespondence(im1, im2, F8, x1, y1, wsize=8)
     x2s.append(x2)
     y2s.append(y2)
     x1s.append(x1)
     y1s.append(y1)
+
+# epipolarMatchGUI(im1, im2, F8)
+
 # matching points in im2
-pts2 = np.stack((x2s, y2s), axis=1) # 288, 2
-pts1 = np.stack((x1s, y1s), axis=1) # 288, 2
+pts2 = np.stack((y2s, x2s), axis=1) # 288, 2
+pts1 = np.stack((y1s, x1s), axis=1) # 288, 2
 
-# Final Camera Projection Matrix 
-C1 = np.concatenate([np.random.rand(3, 3), np.ones([3, 1])], axis=1)
-C2 = np.concatenate([np.random.rand(3, 3), np.ones([3, 1])], axis=1)
-
-# 2D plot 
-# plt.scatter(x1s, y1s, color='cyan')
-# plt.scatter(x2s, y2s, color='hotpink')
-# plt.title("2D matched points pts1, pts2")
-# plt.show()
-
+# Find best possible rot/trans matrix M2 from essential matrix 
 M1 = np.hstack((np.eye(3), np.zeros((3,1))))
-# get possible M2 from essential matrix 
 possible_M2 = camera2(E)
-bestM2, bestC1, bestC2, bestw = getBestM2(M1, possible_M2, pts1, pts2, C1, C2)
+bestM2, bestw = getBestM2(M1, possible_M2, pts1, pts2, K1, K2)
+
+# Final camera matrix: intrinsic + extrinsic (R/T)
+C2 = K2 @ bestM2 
+C1 = K1 @ M1 
 
 # Triangulate to get world coordinates 
-# P: N,3
-P, err = sub.triangulate(bestC1, pts1, bestC2, pts2)
-# plot 3D coords 
-fig = pyplot.figure()
-ax = Axes3D(fig)
-ax.scatter(P[:,0], P[:,1], P[:,2])
-pyplot.show()
+P, err = sub.triangulate(C1, pts1, C2, pts2)
+print('err', err)
+
+# Plot 3D coordinates
+fig = go.Figure(data=
+                [go.Scatter3d(x=P[:,0], y=P[:,1], z=P[:,2],
+                mode='markers',
+                marker=dict(
+                    size=3),
+                )])
+fig.show()
+print("*******SAVING 4.2*********")
+np.savez('q4_2.npz', F=F8, M1=M1, M2=bestM2, C1=C1, C2=C2)
+

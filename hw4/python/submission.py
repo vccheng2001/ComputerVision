@@ -15,6 +15,8 @@ import cv2
 from scipy.sparse.linalg import svds, eigs
 from helper import *
 from util import *
+import scipy 
+from scipy.ndimage import gaussian_filter
 '''
 Q2.1: Eight Point Algorithm
     Input:  pts1, Nx2 Matrix
@@ -49,9 +51,9 @@ def eightpoint(pts1, pts2, M):
     A = np.zeros((N,9))
     for i in range(N):
         # http://cs.brown.edu/courses/cs143/proj5/
-        x, xp = pts2_norm[i][0], pts1_norm[i][0] # one point
-        y, yp = pts2_norm[i][1], pts1_norm[i][1] 
-
+        x, xp = pts1_norm[i][0], pts2_norm[i][0] # one point
+        y, yp = pts1_norm[i][1], pts2_norm[i][1] 
+       
         # each pair of corresp points --> one equation 
         A[i] = [x*xp,x*yp,x,y*xp, y*yp, y, xp, yp, 1]
     # http://16720.courses.cs.cmu.edu/lec/two-view_lec15.pdf
@@ -66,6 +68,7 @@ def eightpoint(pts1, pts2, M):
 
     # unscale
     F_unnorm = T.T @ F @ T
+    
 
     return F_unnorm
     
@@ -202,6 +205,14 @@ def triangulate(C1, pts1, C2, pts2):
         wi = (wi / wi[-1])
         w[i] = wi[:3]
 
+
+        # Method 2: SVD
+        # U, S, VH = np.linalg.svd(Ai, full_matrices=True)
+        # wi = VH[-1,:]
+        # # Divide by scale
+        # wi = (wi / wi[-1])
+        # w[i] = wi[:3]
+
         # project 3D back to 2D image points (p)
         # (Cam intrinsics @ Rot/Trans to World) @ World point = projected image point
         # this is 2D homogeneous 
@@ -211,6 +222,7 @@ def triangulate(C1, pts1, C2, pts2):
         # make nonhomog
         pts1i_hat = (pts1i_hat / pts1i_hat[-1])[:2]
         pts2i_hat = (pts2i_hat / pts2i_hat[-1])[:2]
+
 
 
         # compare with original pts1[i], pts2[i]
@@ -234,7 +246,7 @@ Q4.1: 3D visualization of the temple images.
             y2, y-coordinates of the pixel on im2
             
 '''
-def epipolarCorrespondence(im1, im2, F, x1, y1):
+def epipolarCorrespondence(im1, im2, F, x1, y1, wsize=4):
 
     '''
     given (x1,y1) pixel in im1
@@ -244,8 +256,8 @@ def epipolarCorrespondence(im1, im2, F, x1, y1):
     given F,x: find xp
     '''
     # get window around pixel (x1, y1)
-    win1 = getWindow(im1, (x1,y1))
-
+    win1 = getWindow(im1, (x1,y1), wsize=wsize)
+   
     x = np.array([x1,y1,1])
     lp = F @ x # pt2 must lie on this epipolar line
 
@@ -260,8 +272,10 @@ def epipolarCorrespondence(im1, im2, F, x1, y1):
     pts = pts[1:-1, :]
     for pt in pts:
         if pt[0] == 0 or pt[1] == 0: continue
-        win2 = getWindow(im2, pt)
-        dist = computeWindowDist(win1, win2) 
+        win2 = getWindow(im2, pt,  wsize=wsize)
+        
+        dist = computeWindowDist(win1, win2)
+        
         if dist < bestDist:
             bestDist = dist
             bestPt = pt
@@ -274,7 +288,7 @@ def epipolarCorrespondence(im1, im2, F, x1, y1):
     
 
 
-def getWindow(im, pixel, wsize=4):
+def getWindow(im, pixel, wsize):
     cx, cy = pixel
     cx, cy = int(cx), int(cy)
 
@@ -289,7 +303,7 @@ def computeWindowDist(win1, win2):
     win2 = win2.flatten()
 
     # Euclidean dist 
-    dist = np.linalg.norm(win1 - win2)
+    dist = np.linalg.norm(win1 - win2, ord=1)
     return dist 
 
 
