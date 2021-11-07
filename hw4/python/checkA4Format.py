@@ -5,6 +5,8 @@ Written by Chen Kong, 2018.
 """
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import pyplot
+from mpl_toolkits.mplot3d import Axes3D
 import submission as sub
 from helper import * 
 
@@ -17,11 +19,11 @@ p1, p2 = data['pts1'][0], data['pts2'][0]
 p1 = sub.make_homogeneous(p1)
 p2 = sub.make_homogeneous(p2)
 
+print('Num sel pts', data['pts1'].shape) # 110
+
 N = data['pts1'].shape[0]
-M = 640
-
-
-
+M = max(im1.shape)
+assert(M==640)
 
 
 # 2.1
@@ -39,7 +41,8 @@ E = sub.essentialMatrix(F8, K1, K2)
 print('Essential matrix: ', E)
 np.savez('q3_1.npz', E)
 
-print('Checking essential matrix, should be 0', p2.T @ E @ p1)
+# NOTE: 
+# print('Checking essential matrix, should be 0', p2.T @ E @ p1)
 
 
 
@@ -48,6 +51,16 @@ C1 = np.concatenate([np.random.rand(3, 3), np.ones([3, 1])], axis=1)
 C2 = np.concatenate([np.random.rand(3, 3), np.ones([3, 1])], axis=1)
 
 P, err = sub.triangulate(C1, data['pts1'], C2, data['pts2'])
+# print('P', P)
+# fig = pyplot.figure()
+# ax = fig.add_subplot(111, projection='3d')
+# ax.set_xlim3d(-5, 5)
+# ax.set_ylim3d(-5, 5)
+# ax.set_zlim3d(-5, 5)
+# ax = Axes3D(fig)
+# ax.scatter(P[:,0], P[:,1], P[:,2])
+# pyplot.show()
+
 assert P.shape == (N, 3), 'triangulate returns Nx3 matrix P'
 assert np.isscalar(err), 'triangulate returns scalar err'
 

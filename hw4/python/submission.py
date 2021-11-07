@@ -164,9 +164,7 @@ def triangulate(C1, pts1, C2, pts2):
     close to original 2D points. 
 
 
-    '''
-    N, _ = pts1.shape
-    
+    '''    
 
     # (3x4)@(4x1)    pts1: (3x1) homog
     # C1 @ wi_homog should be lambda*pts1

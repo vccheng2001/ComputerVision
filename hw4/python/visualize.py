@@ -47,35 +47,38 @@ K1, K2 = intrinsics['K1'], intrinsics['K2']
 # Essential matrix from Fundamental Matrix, Camera Intrinsics
 E = sub.essentialMatrix(F8, K1, K2)
 
-x2s, y2s = [],[]
+x1s, y1s, x2s, y2s = [],[], [], []
 # Epipolar correspondences 
 for x1,y1 in pts1:
     x2, y2 = sub.epipolarCorrespondence(im1, im2, F8, x1, y1)
     x2s.append(x2)
     y2s.append(y2)
+    x1s.append(x1)
+    y1s.append(y1)
 # matching points in im2
 pts2 = np.stack((x2s, y2s), axis=1) # 288, 2
-print('pts2', pts2.shape) # 
+pts1 = np.stack((x1s, y1s), axis=1) # 288, 2
 
 # Final Camera Projection Matrix 
 C1 = np.concatenate([np.random.rand(3, 3), np.ones([3, 1])], axis=1)
 C2 = np.concatenate([np.random.rand(3, 3), np.ones([3, 1])], axis=1)
 
+# 2D plot 
+# plt.scatter(x1s, y1s, color='cyan')
+# plt.scatter(x2s, y2s, color='hotpink')
+# plt.title("2D matched points pts1, pts2")
+# plt.show()
+
+M1 = np.hstack((np.eye(3), np.zeros((3,1))))
+# get possible M2 from essential matrix 
+possible_M2 = camera2(E)
+bestM2, bestC1, bestC2, bestw = getBestM2(M1, possible_M2, pts1, pts2, C1, C2)
+
 # Triangulate to get world coordinates 
 # P: N,3
-P, err = sub.triangulate(C1, pts1, C2, pts2)
-# print('world points P', P)
+P, err = sub.triangulate(bestC1, pts1, bestC2, pts2)
 # plot 3D coords 
 fig = pyplot.figure()
 ax = Axes3D(fig)
 ax.scatter(P[:,0], P[:,1], P[:,2])
 pyplot.show()
-
-
-
-M1 = np.hstack((np.eye(3), np.zeros((3,1))))
-# get possible M2 from essential matrix 
-possible_M2 = camera2(E)
-M2 = getBestM2(M1, possible_M2, pts1, pts2, C1, C2)
-np.savez('q4_2.npz', F8, M1, M2, C1, C2)
-

@@ -45,6 +45,8 @@ def getBestM2(M1, possible_M2, pts1, pts2, C1, C2):
     # test four solutions through triangulations 
     # returns (Nx3) world coordinates 
     best_M2 = None
+    best_C1 = None
+    best_C2 = None
     best_err = np.inf
     C2 = None 
     best_w = None
@@ -66,7 +68,8 @@ def getBestM2(M1, possible_M2, pts1, pts2, C1, C2):
             best_M2 = M2 
             best_w = w
             best_C2 = C2 
-    return best_M2 
+            best_C1 = C1
+    return best_M2, best_C1, best_C2, best_w 
 
 # p1, p2 = pts1[0], pts2[0]
 # print(f'image points: {p1}, {p2}')
