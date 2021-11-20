@@ -26,7 +26,9 @@ params = {}
 ##########################
 ##### your code here #####
 ##########################
-
+# initialize a layer
+initialize_weights(2,25,params,'layer1')
+initialize_weights(25,4,params,'output')
 
 # with default settings, you should get loss < 150 and accuracy > 80%
 for itr in range(max_iters):

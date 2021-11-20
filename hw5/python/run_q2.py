@@ -12,7 +12,6 @@ g1 = np.random.multivariate_normal([3.9,10],[[0.01,0],[0,5]],10)
 g2 = np.random.multivariate_normal([3.4,30],[[0.25,0],[0,5]],10)
 g3 = np.random.multivariate_normal([2.0,10],[[0.5,0],[0,10]],10)
 x = np.vstack([g0,g1,g2,g3])
-print('x',x.shape)
 
 # we will do XW + B
 # that implies that the data is N x D
@@ -43,7 +42,6 @@ test = sigmoid(np.array([-1000,1000]))
 print('should be zero and one\t',test.min(),test.max())
 # implement forward
 h1 = forward(x,params,'layer1')
-print(h1.shape)
 # Q 2.2.2
 # implement softmax
 probs = forward(h1,params,'output',softmax)
@@ -74,50 +72,67 @@ print('delta2shape', delta2.shape)
 # Implement backwards!
 backwards(delta2,params,'layer1',sigmoid_deriv)
 
+
 # W and b should match their gradients sizes
 for k,v in sorted(list(params.items())):
     if 'grad' in k:
         name = k.split('_')[1]
         print(name,v.shape, params[name].shape)
 
-exit(-1)
+
 print('End of 2.3')
 # Q 2.4
+n = x.shape[0]
+print('num total examples: ', n)
 batches = get_random_batches(x,y,5)
+
 # print batch sizes
 print([_[0].shape[0] for _ in batches])
 batch_num = len(batches)
 
+print("PARAMS", params.keys())
+print('End of 2.4')
+
 # WRITE A TRAINING LOOP HERE
+
+print("******STARTING TRAINING LOOP********\n\n")
 max_iters = 500
 learning_rate = 1e-3
 # with default settings, you should get loss < 35 and accuracy > 75%
+accs = []
 for itr in range(max_iters):
     total_loss = 0
     avg_acc = 0
     for xb,yb in batches:
-        # forward
+        # print(f'xb={xb},yb={yb}')
 
-        out = forward(xb,params,name='',activation=sigmoid)
-        l, a = compute_loss_and_acc(yb, out)
+        # forward
+        # print('xb', xb.shape) # (5,2)
+        # print('yb', yb.shape) # (5,4)
+        h1= forward(xb,params,name='layer1',activation=sigmoid)
+        probs= forward(h1, params,name='output',activation=softmax)
+        # print('Probs', probs.shape)
+        loss, acc = compute_loss_and_acc(yb, probs)
 
         # loss
         # be sure to add loss and accuracy to epoch totals 
+        total_loss += loss 
+        avg_acc += acc
 
-        loss += loss 
-        acc += a
+        y_idx = np.argmax(yb, axis=1) # one hot to indices
         # backward
-
-        grad_X = backwards(delta,params,name='',activation_deriv=sigmoid_deriv)
+        delta1 = probs
+        delta1[np.arange(probs.shape[0]),y_idx] -= 1
+        delta2 = backwards(delta1,params,'output',linear_deriv)
+        backwards(delta2,params,'layer1',sigmoid_deriv)
 
         # apply gradient
-
-        
-
-        ##########################
-        ##### your code here #####
-        ##########################
-
+        params["Wlayer1"] = params["Wlayer1"] + (learning_rate*params["grad_Wlayer1"])
+        params["blayer1"] = params["blayer1"] + (learning_rate*params["grad_blayer1"])
+        params["Woutput"] = params["Woutput"] + (learning_rate*params["grad_Woutput"])
+        params["boutput"] = params["boutput"] + (learning_rate*params["grad_boutput"])
+   
+    avg_acc /= batch_num # average acc across all batches 
         
     if itr % 100 == 0:
         print("itr: {:02d} \t loss: {:.2f} \t acc : {:.2f}".format(itr,total_loss,avg_acc))

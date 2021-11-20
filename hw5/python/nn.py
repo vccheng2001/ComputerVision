@@ -45,7 +45,7 @@ def forward(X,params,name='',activation=sigmoid):
     name -- name of the layer
     activation -- the activation function (default is sigmoid)
     """
-    print('**** Forward ****')
+    # print('**** Forward ****')
 
     pre_act, post_act = None, None
     # get the layer parameters
@@ -88,7 +88,7 @@ def forward(X,params,name='',activation=sigmoid):
 # x is [examples,classes]
 # softmax should be done for each row
 def softmax(x):
-    print('**** Softmax ****')
+    # print('**** Softmax ****')
     res = None
 
     ##########################
@@ -105,7 +105,7 @@ def softmax(x):
 # y is one hot, size [examples,classes]
 # probs is size [examples,classes]
 def compute_loss_and_acc(y, probs):
-    print('**** Compute loss, acc ****')
+    # print('**** Compute loss, acc ****')
 
     loss, acc = None, None
 
@@ -129,15 +129,13 @@ def compute_loss_and_acc(y, probs):
 # because you proved it
 # it's a function of post_act
 def sigmoid_deriv(post_act):
-    print('**** Sigmoid deriv ****')
-    print('inp', post_act.shape)
+    # print('**** Sigmoid deriv ****')
 
     res = post_act*(1.0-post_act)
-    print('out', res.shape)
     return res
 
 def backwards(delta,params,name='',activation_deriv=sigmoid_deriv):
-    print(f'****Backwards, name={name}, activ={activation_deriv}****')
+    # print(f'****Backwards, name={name}, activ={activation_deriv}****')
     """
     Do a backwards pass
 
@@ -161,11 +159,12 @@ def backwards(delta,params,name='',activation_deriv=sigmoid_deriv):
     # everything you may need for this layer
     W = params['W' + name]
     b = params['b' + name]
-    X, pre_act, post_act = params['cache_' + name]
-    print("X", X.shape)
 
-    print('pre_act', pre_act.shape)
-    print('post_act', post_act.shape)
+
+    
+    X, pre_act, post_act = params['cache_' + name]
+    N, _ = X.shape
+
     # do the derivative through activation first
     # then compute the derivative W,b, and X
     ##########################
@@ -174,13 +173,8 @@ def backwards(delta,params,name='',activation_deriv=sigmoid_deriv):
     # z = Wx+b
     #  o = σ(z) = o(Wx+b)
     #  σ'(x) =  σ(x)[1- σ(x)]
-    print('W', W.shape) # M=25, 4
-    print('b', b.shape) # 4
-    print('delta',delta.shape)
-    print
-
+    
     if activation_deriv == sigmoid_deriv:
-        print('aa', delta.shape, sigmoid_deriv(post_act).shape)
         # (40x40) @ (25x40) = (40x25)
         dL_dz = (delta * sigmoid_deriv(post_act)).T
 
@@ -196,20 +190,27 @@ def backwards(delta,params,name='',activation_deriv=sigmoid_deriv):
     assert grad_W.shape == W.shape #output:(25,4), layer1: (2,25)
 
     # (40,25) @ (25,2) = (40,2)
-    print(dL_dz.T.shape, dz_dX.shape)
+    # print(dL_dz.T.shape, dz_dX.shape)
     grad_X = dL_dz.T @ dz_dX
 
-    dz_db = np.ones((40,1))
+    dz_db = np.ones((N,1))
     # (40,25 ) @ (40, 1)  = (25,1)
     grad_b = dL_dz @ dz_db 
     grad_b = grad_b.squeeze()
     assert grad_b.shape == b.shape #output:(4,), layer1:(25,)
 
-    print(f'grad_W={grad_W.shape}, grad_X={grad_X.shape}, grad_b={grad_b.shape}')
+    # print(f'grad_W={grad_W.shape}, grad_X={grad_X.shape}, grad_b={grad_b.shape}')
 
     # store the gradients
     params['grad_W' + name] = grad_W
     params['grad_b' + name] = grad_b
+
+    if name == "output":
+        pass
+        # print('W', W)
+        # print('b', b)
+        # print('grads', grad_W, grad_b)
+    # exit(-1)
     
     return grad_X
 
@@ -237,11 +238,12 @@ def get_random_batches(x,y,batch_size):
 
     for j in range(num_chunks):
         # each batch should be x:bxM, y:bx1
-        batches.append(x_shuff[i:i+batch_size], y_shuff[i:i+batch_size])
+        batches.append((x_shuff[i:i+batch_size], y_shuff[i:i+batch_size]))
         i += batch_size 
 
 
     ##########################
     ##### your code here #####
     ##########################
+    print('batches[0]', batches[0])
     return batches
