@@ -135,6 +135,7 @@ def sigmoid_deriv(post_act):
     return res
 
 def backwards(delta,params,name='',activation_deriv=sigmoid_deriv):
+    print(f'Backwards, name={name}, activ={activation_deriv}')
     """
     Do a backwards pass
 
@@ -144,24 +145,60 @@ def backwards(delta,params,name='',activation_deriv=sigmoid_deriv):
     name -- name of the layer
     activation_deriv -- the derivative of the activation_func
     """
+
+    '''
+    a = Wx+b
+    o = sigmoid(a)
+
+    W:25,4 25-->4
+    X in: 40,25
+    Wx+b=preact=40,4
+    postact:40,4
+    '''
     grad_X, grad_W, grad_b = None, None, None
     # everything you may need for this layer
     W = params['W' + name]
     b = params['b' + name]
     X, pre_act, post_act = params['cache_' + name]
+    print("X", X.shape)
 
+    print('pre_act', pre_act.shape)
+    print('post_act', post_act.shape)
     # do the derivative through activation first
     # then compute the derivative W,b, and X
     ##########################
     ##### your code here #####
     ##########################
+    # z = Wx+b
+    #  o = σ(z) = o(Wx+b)
+    #  σ'(x) =  σ(x)[1- σ(x)]
+    print('W', W.shape) # M=25, 4
+    print('b', b.shape) # 4
 
-    # calculate dW and db only under training mode
-    da               =  df2 @ self.W[1].T                       # dE/da
-    self.dW[1]       =  df2.T @ self.a                          # dE/dW1
-    df1 = self.db[0] =  da @ activation_deriv # dE/df1
-    self.dW[0]       =  df1.T @ self.activations[0].x  
+    if activation_deriv == sigmoid_deriv:
+        dL_dz = delta.T @ sigmoid_deriv(post_act)
+    elif activation_deriv == linear_deriv:
+        dL_dz = delta.T @ linear_deriv(pre_act)
+    print('dL_dz', dL_dz.shape)
 
+
+
+    dz_dX = W.T
+    dz_dW = X
+    dz_db = 1
+    print('dz_dx', dz_dX.shape)
+    print('dz_dW', dz_dW.shape)
+
+    #dL/dW = dL/do @ do/dz @ dz/dW
+    grad_W = dL_dz @ dz_dW
+    assert grad_W.shape == W.shape
+    # (40,4)@(40,4)@(4,25)@(4,1) = (4,1)
+
+    grad_b = dL_dz @ dz_db
+    # (40,4)@(40,4)@(4,25)
+    grad_X = dL_dz @ dz_dX
+
+    assert grad_b.shape == b.shape
 
     # store the gradients
     params['grad_W' + name] = grad_W

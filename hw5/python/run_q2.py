@@ -12,6 +12,7 @@ g1 = np.random.multivariate_normal([3.9,10],[[0.01,0],[0,5]],10)
 g2 = np.random.multivariate_normal([3.4,30],[[0.25,0],[0,5]],10)
 g3 = np.random.multivariate_normal([2.0,10],[[0.5,0],[0,10]],10)
 x = np.vstack([g0,g1,g2,g3])
+print('x',x.shape)
 
 # we will do XW + B
 # that implies that the data is N x D
@@ -57,17 +58,19 @@ loss, acc = compute_loss_and_acc(y, probs) # verified
 # if it is not, check softmax!
 print("{}, {:.2f}".format(loss,acc))
 
-
-exit(-1)
+print('DONE Q2.2.3')
 # here we cheat for you
 # the derivative of cross-entropy(softmax(x)) is probs - 1[correct actions]
 delta1 = probs
 delta1[np.arange(probs.shape[0]),y_idx] -= 1
+print('delta1 shape', delta1.shape)
 
 # we already did derivative through softmax
 # so we pass in a linear_deriv, which is just a vector of ones
 # to make this a no-op
+
 delta2 = backwards(delta1,params,'output',linear_deriv)
+print('delta2shape', delta2.shape)
 # Implement backwards!
 backwards(delta2,params,'layer1',sigmoid_deriv)
 
@@ -77,6 +80,8 @@ for k,v in sorted(list(params.items())):
         name = k.split('_')[1]
         print(name,v.shape, params[name].shape)
 
+exit(-1)
+print('End of 2.3')
 # Q 2.4
 batches = get_random_batches(x,y,5)
 # print batch sizes
@@ -133,6 +138,11 @@ eps = 1e-6
 for k,v in params.items():
     if '_' in k: 
         continue
+
+    for val in v:
+        val += eps
+        loss = forward(val)
+
     # we have a real parameter!
     # for each value inside the parameter
     #   add epsilon
