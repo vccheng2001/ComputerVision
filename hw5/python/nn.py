@@ -182,28 +182,22 @@ def backwards(delta,params,name='',activation_deriv=sigmoid_deriv):
     if activation_deriv == sigmoid_deriv:
         print('aa', delta.shape, sigmoid_deriv(post_act).shape)
         # (40x40) @ (25x40) = (40x25)
-        dL_dz = delta @ sigmoid_deriv(post_act)
+        dL_dz = (delta * sigmoid_deriv(post_act)).T
+
     elif activation_deriv == linear_deriv:
         dL_dz = delta.T
-    print('dL_dz', dL_dz.shape)
-
-
 
     dz_dX = W.T
     dz_dW = X
     dz_db = 1
-    print('dz_dx', dz_dX.shape)
-    print('dz_dW', dz_dW.shape)
-
-    #dL/dW = dL/do @ do/dz @ dz/dW
+    
     # (40,25) @ (40,2) = (25,2).T = (2,25)
     grad_W = (dL_dz @ dz_dW).T
     assert grad_W.shape == W.shape #output:(25,4), layer1: (2,25)
 
     # (40,25) @ (25,2) = (40,2)
+    print(dL_dz.T.shape, dz_dX.shape)
     grad_X = dL_dz.T @ dz_dX
-    # assert(grad_X.shape == (40,25)) # output
-
 
     dz_db = np.ones((40,1))
     # (40,25 ) @ (40, 1)  = (25,1)
