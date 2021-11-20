@@ -119,6 +119,7 @@ def compute_loss_and_acc(y, probs):
     pred_classes = np.argmax(probs, axis=1)
 
 
+
     loss = np.sum(y * -np.log(probs))
     correct = np.count_nonzero(gt_classes == pred_classes)
     acc = correct / n
@@ -246,5 +247,4 @@ def get_random_batches(x,y,batch_size):
     ##########################
     ##### your code here #####
     ##########################
-    print('batches[0]', batches[0])
     return batches
