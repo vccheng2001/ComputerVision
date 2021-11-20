@@ -91,9 +91,13 @@ for itr in range(max_iters):
         pass
         # forward
 
+        forward(batch) 
+
         # loss
         # be sure to add loss and accuracy to epoch totals 
 
+        loss += 
+        acc += 
         # backward
 
         # apply gradient
