@@ -130,12 +130,14 @@ def compute_loss_and_acc(y, probs):
 # it's a function of post_act
 def sigmoid_deriv(post_act):
     print('**** Sigmoid deriv ****')
+    print('inp', post_act.shape)
 
     res = post_act*(1.0-post_act)
+    print('out', res.shape)
     return res
 
 def backwards(delta,params,name='',activation_deriv=sigmoid_deriv):
-    print(f'Backwards, name={name}, activ={activation_deriv}')
+    print(f'****Backwards, name={name}, activ={activation_deriv}****')
     """
     Do a backwards pass
 
@@ -174,11 +176,15 @@ def backwards(delta,params,name='',activation_deriv=sigmoid_deriv):
     #  σ'(x) =  σ(x)[1- σ(x)]
     print('W', W.shape) # M=25, 4
     print('b', b.shape) # 4
+    print('delta',delta.shape)
+    print
 
     if activation_deriv == sigmoid_deriv:
-        dL_dz = delta.T @ sigmoid_deriv(post_act)
+        print('aa', delta.shape, sigmoid_deriv(post_act).shape)
+        # (40x40) @ (25x40) = (40x25)
+        dL_dz = delta @ sigmoid_deriv(post_act)
     elif activation_deriv == linear_deriv:
-        dL_dz = delta.T @ linear_deriv(pre_act)
+        dL_dz = delta.T
     print('dL_dz', dL_dz.shape)
 
 
@@ -190,15 +196,22 @@ def backwards(delta,params,name='',activation_deriv=sigmoid_deriv):
     print('dz_dW', dz_dW.shape)
 
     #dL/dW = dL/do @ do/dz @ dz/dW
-    grad_W = dL_dz @ dz_dW
-    assert grad_W.shape == W.shape
-    # (40,4)@(40,4)@(4,25)@(4,1) = (4,1)
+    # (40,25) @ (40,2) = (25,2).T = (2,25)
+    grad_W = (dL_dz @ dz_dW).T
+    assert grad_W.shape == W.shape #output:(25,4), layer1: (2,25)
 
-    grad_b = dL_dz @ dz_db
-    # (40,4)@(40,4)@(4,25)
-    grad_X = dL_dz @ dz_dX
+    # (40,25) @ (25,2) = (40,2)
+    grad_X = dL_dz.T @ dz_dX
+    # assert(grad_X.shape == (40,25)) # output
 
-    assert grad_b.shape == b.shape
+
+    dz_db = np.ones((40,1))
+    # (40,25 ) @ (40, 1)  = (25,1)
+    grad_b = dL_dz @ dz_db 
+    grad_b = grad_b.squeeze()
+    assert grad_b.shape == b.shape #output:(4,), layer1:(25,)
+
+    print(f'grad_W={grad_W.shape}, grad_X={grad_X.shape}, grad_b={grad_b.shape}')
 
     # store the gradients
     params['grad_W' + name] = grad_W
