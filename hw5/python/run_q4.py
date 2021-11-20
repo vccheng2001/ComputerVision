@@ -21,6 +21,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 
 for img in os.listdir('../images'):
+    print('Processing img: ', img)
     im1 = skimage.img_as_float(skimage.io.imread(os.path.join('../images',img)))
     bboxes, bw = findLetters(im1)
 
@@ -31,6 +32,7 @@ for img in os.listdir('../images'):
                                 fill=False, edgecolor='red', linewidth=2)
         plt.gca().add_patch(rect)
     plt.show()
+    continue
     # find the rows using..RANSAC, counting, clustering, etc.
     ##########################
     ##### your code here #####
