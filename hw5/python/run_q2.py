@@ -22,6 +22,9 @@ y_idx = np.array([0 for _ in range(10)] + [1 for _ in range(10)] + [2 for _ in r
 y = np.zeros((y_idx.shape[0],y_idx.max()+1))
 y[np.arange(y_idx.shape[0]),y_idx] = 1
 
+print('x', x.shape) # N=40, M=2
+print('y',y.shape)
+# exit(-1)
 # parameters in a dictionary
 params = {}
 
@@ -124,14 +127,16 @@ for itr in range(max_iters):
         delta1 = probs
         delta1[np.arange(probs.shape[0]),y_idx] -= 1
         delta2 = backwards(delta1,params,'output',linear_deriv)
-        backwards(delta2,params,'layer1',sigmoid_deriv)
 
         # apply gradient
-        params["Wlayer1"] = params["Wlayer1"] + (learning_rate*params["grad_Wlayer1"])
-        params["blayer1"] = params["blayer1"] + (learning_rate*params["grad_blayer1"])
         params["Woutput"] = params["Woutput"] + (learning_rate*params["grad_Woutput"])
         params["boutput"] = params["boutput"] + (learning_rate*params["grad_boutput"])
    
+        backwards(delta2,params,'layer1',sigmoid_deriv)
+
+        params["Wlayer1"] = params["Wlayer1"] + (learning_rate*params["grad_Wlayer1"])
+        params["blayer1"] = params["blayer1"] + (learning_rate*params["grad_blayer1"])
+
     avg_acc /= batch_num # average acc across all batches 
         
     if itr % 100 == 0:
@@ -150,13 +155,26 @@ import copy
 params_orig = copy.deepcopy(params)
 
 eps = 1e-6
+print('params.keys', params.keys())
 for k,v in params.items():
+
     if '_' in k: 
         continue
 
-    for val in v:
-        val += eps
-        loss = forward(val)
+    params[k] += eps 
+    print("PARAMS")
+
+    h1_plus = forward(x,params,name='layer1',activation=sigmoid)
+    probs_plus = forward(h1_plus, params,name='output',activation=softmax)
+
+    h1_minus = forward(x,params,name='layer1',activation=sigmoid)
+    probs_minus = forward(h1_minus, params,name='output',activation=softmax)
+
+    loss_plus, _ = compute_loss_and_acc(y, probs_plus) 
+    loss_minus, _ = compute_loss_and_acc(y, probs_minus)
+
+    # set each grad value 
+    params['grad_'+k] = (loss_plus - loss_minus) / (2*eps)
 
     # we have a real parameter!
     # for each value inside the parameter
@@ -164,10 +182,6 @@ for k,v in params.items():
     #   run the network
     #   get the loss
     #   compute derivative with central diffs
-    
-    ##########################
-    ##### your code here #####
-    ##########################
 
 total_error = 0
 for k in params.keys():
