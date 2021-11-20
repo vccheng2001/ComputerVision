@@ -4,6 +4,13 @@ from nn import *
 from util import *
 
 
+def forward_and_loss(x, y, params):
+    h1 = forward(x,params,name='layer1',activation=sigmoid)
+    probs = forward(h1, params,name='output',activation=softmax)
+    loss, acc = compute_loss_and_acc(y, probs)
+    return loss, acc
+
+
 # fake data
 # feel free to plot it in 2D
 # what do you think these 4 classes are?
@@ -161,32 +168,45 @@ for k,v in params.items():
     if '_' in k: 
         continue
 
-    params[k] += eps 
-    print("PARAMS")
+    vshape = v.shape
+    flat = v.flatten()
+    for i in range(len(v)):
+        params_plus =copy.deepcopy(params_orig)
+        params_minus =copy.deepcopy(params_orig)
 
-    h1_plus = forward(x,params,name='layer1',activation=sigmoid)
-    probs_plus = forward(h1_plus, params,name='output',activation=softmax)
+        v_orig_plus = copy.deepcopy(flat)
+        v_orig_minus = copy.deepcopy(flat)
+        v_orig_plus[i] += eps
+        v_orig_minus[i] -= eps
 
-    h1_minus = forward(x,params,name='layer1',activation=sigmoid)
-    probs_minus = forward(h1_minus, params,name='output',activation=softmax)
+        flat_plus = v_orig_plus
+        flat_minus = v_orig_minus
+        print('flatp', flat_plus.shape)
 
-    loss_plus, _ = compute_loss_and_acc(y, probs_plus) 
-    loss_minus, _ = compute_loss_and_acc(y, probs_minus)
 
-    # set each grad value 
-    params['grad_'+k] = (loss_plus - loss_minus) / (2*eps)
+        params_plus[k] = flat_plus.reshape(vshape)
+        params_minus[k] = flat_minus.reshape(vshape)
 
-    # we have a real parameter!
-    # for each value inside the parameter
-    #   add epsilon
-    #   run the network
-    #   get the loss
-    #   compute derivative with central diffs
+        loss_plus, _ = forward_and_loss(x, y, params_plus)
+        loss_minus, _ = forward_and_loss(x, y, params_minus)
+
+        grad_shape = params['grad_'+k].shape
+        flat_grad = params['grad_'+k].flatten()
+        flat_grad[i] = (loss_plus - loss_minus) / (2*eps)
+        # set each grad value 
+        params['grad_'+k] = flat_grad.reshape(grad_shape)
+            
+
+
 
 total_error = 0
 for k in params.keys():
     if 'grad_' in k:
         # relative error
+        print('aa', params[k])
+        
+        print('orig') 
+        print(params_orig[k])
         err = np.abs(params[k] - params_orig[k])/np.maximum(np.abs(params[k]),np.abs(params_orig[k]))
         err = err.sum()
         print('{} {:.2e}'.format(k, err))
