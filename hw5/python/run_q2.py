@@ -12,6 +12,7 @@ g1 = np.random.multivariate_normal([3.9,10],[[0.01,0],[0,5]],10)
 g2 = np.random.multivariate_normal([3.4,30],[[0.25,0],[0,5]],10)
 g3 = np.random.multivariate_normal([2.0,10],[[0.5,0],[0,10]],10)
 x = np.vstack([g0,g1,g2,g3])
+
 # we will do XW + B
 # that implies that the data is N x D
 
@@ -31,7 +32,7 @@ initialize_weights(25,4,params,'output')
 assert(params['Wlayer1'].shape == (2,25))
 assert(params['blayer1'].shape == (25,))
 
-#expect 0, [0.05 to 0.12]
+# expect 0, [0.05 to 0.12]
 print("{}, {:.2f}".format(params['blayer1'].sum(),params['Wlayer1'].std()**2))
 print("{}, {:.2f}".format(params['boutput'].sum(),params['Woutput'].std()**2))
 
@@ -51,11 +52,13 @@ print(probs.min(),min(probs.sum(1)),max(probs.sum(1)),probs.shape)
 
 # Q 2.2.3
 # implement compute_loss_and_acc
-loss, acc = compute_loss_and_acc(y, probs)
+loss, acc = compute_loss_and_acc(y, probs) # verified 
 # should be around -np.log(0.25)*40 [~55] and 0.25
 # if it is not, check softmax!
 print("{}, {:.2f}".format(loss,acc))
 
+
+exit(-1)
 # here we cheat for you
 # the derivative of cross-entropy(softmax(x)) is probs - 1[correct actions]
 delta1 = probs
@@ -88,19 +91,23 @@ for itr in range(max_iters):
     total_loss = 0
     avg_acc = 0
     for xb,yb in batches:
-        pass
         # forward
 
-        forward(batch) 
+        out = forward(xb,params,name='',activation=sigmoid)
+        l, a = compute_loss_and_acc(yb, out)
 
         # loss
         # be sure to add loss and accuracy to epoch totals 
 
-        loss += 
-        acc += 
+        loss += loss 
+        acc += a
         # backward
 
+        grad_X = backwards(delta,params,name='',activation_deriv=sigmoid_deriv)
+
         # apply gradient
+
+        
 
         ##########################
         ##### your code here #####

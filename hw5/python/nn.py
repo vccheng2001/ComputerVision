@@ -9,25 +9,29 @@ from util import *
 # we will do XW + b. 
 # X be [Examples, Dimensions]
 def initialize_weights(in_size,out_size,params,name=''):
+    print('**** Initialize weights ***')
+
     W, b = None, None
 
-    ##########################
-    ##### your code here #####
-    ##########################
+    W = np.zeros((in_size, out_size))
+    b = np.zeros((out_size,))
 
     params['W' + name] = W
     params['b' + name] = b
+
+
+    
 
 ############################## Q 2.2.1 ##############################
 # x is a matrix
 # a sigmoid activation function
 def sigmoid(x):
+    print('**** Sigmoid ****')
 
     ##########################
     ##### your code here #####
     ##########################
-    res = 1 / (1+np.e**-x)
-
+    res = 1 / (1+np.exp(-x))
     return res
 
 ############################## Q 2.2.1 ##############################
@@ -41,10 +45,14 @@ def forward(X,params,name='',activation=sigmoid):
     name -- name of the layer
     activation -- the activation function (default is sigmoid)
     """
+    print('**** Forward ****')
+
     pre_act, post_act = None, None
     # get the layer parameters
     W = params['W' + name]
     b = params['b' + name]
+
+
 
 
     ##########################
@@ -52,7 +60,16 @@ def forward(X,params,name='',activation=sigmoid):
     ##########################
 
     # linear combination 
-    pre_act  = W @ X + b
+
+    N, M = X.shape
+    M, D = W.shape
+    # print(f'N={N}, M={M}, D={D}')
+    # print('W', W.shape) # M,D
+    # print('X', X.shape) # N,M
+    # print('b', b.shape) # D,1
+    # print((X @ W).shape)
+    # print(np.expand_dims(b, 0).shape)
+    pre_act  = X @ W + np.expand_dims(b, 0) # (NxD)+(1xD)
 
     # activation
     if activation == "sigmoid":
@@ -71,13 +88,14 @@ def forward(X,params,name='',activation=sigmoid):
 # x is [examples,classes]
 # softmax should be done for each row
 def softmax(x):
+    print('**** Softmax ****')
     res = None
 
     ##########################
     ##### your code here #####
     ##########################
 
-    exp = np.exp(x)
+    exp = np.exp(x-np.max(x))
     res = exp / np.sum(exp, axis=1, keepdims=True)
 
     return res
@@ -87,6 +105,8 @@ def softmax(x):
 # y is one hot, size [examples,classes]
 # probs is size [examples,classes]
 def compute_loss_and_acc(y, probs):
+    print('**** Compute loss, acc ****')
+
     loss, acc = None, None
 
     ##########################
@@ -109,6 +129,8 @@ def compute_loss_and_acc(y, probs):
 # because you proved it
 # it's a function of post_act
 def sigmoid_deriv(post_act):
+    print('**** Sigmoid deriv ****')
+
     res = post_act*(1.0-post_act)
     return res
 
@@ -144,13 +166,13 @@ def backwards(delta,params,name='',activation_deriv=sigmoid_deriv):
     # store the gradients
     params['grad_W' + name] = grad_W
     params['grad_b' + name] = grad_b
+    
     return grad_X
 
 ############################## Q 2.4 ##############################
 # split x and y into random batches
 # return a list of [(batch1_x,batch1_y)...]
 def get_random_batches(x,y,batch_size):
-
     # x : N x M
     # y : N x 1 
     N,M = x.shape
