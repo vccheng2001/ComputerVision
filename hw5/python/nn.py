@@ -28,9 +28,10 @@ def initialize_weights(in_size,out_size,params,name=''):
 # x is a matrix
 # a sigmoid activation function
 def sigmoid(x):
-
     res = 1 / (1+np.exp(-x))
     return res
+
+
 
 ############################## Q 2.2.1 ##############################
 def forward(X,params,name='',activation=sigmoid):
@@ -126,6 +127,7 @@ def sigmoid_deriv(post_act):
 
 def backwards(delta,params,name='',activation_deriv=sigmoid_deriv):
     # print(f'****Backwards, name={name}, activ={activation_deriv}****')
+  
     """
     Do a backwards pass
     Keyword arguments:
@@ -161,13 +163,17 @@ def backwards(delta,params,name='',activation_deriv=sigmoid_deriv):
     # z = Wx+b
     #  o = σ(z) = o(Wx+b)
     #  σ'(x) =  σ(x)[1- σ(x)]
+
     
     if activation_deriv == sigmoid_deriv:
         # (40x40) @ (25x40) = (40x25)
         dL_dz = (delta * sigmoid_deriv(post_act)).T
 
     elif activation_deriv == linear_deriv:
-        dL_dz = delta.T
+        dL_dz = delta.T 
+
+    elif activation_deriv == relu_deriv:
+        dL_dz = (delta * relu_deriv(post_act)).T
 
     dz_dX = W.T
     dz_dW = X

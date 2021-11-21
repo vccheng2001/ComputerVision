@@ -86,7 +86,6 @@ for img in os.listdir('../images'):
     # (N, M=1024) (N, K=36)
 
     print("***** TESTING *********")
-   
     test_accs = []
     test_losses = []
     for test_xb in test_x:
