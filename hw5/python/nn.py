@@ -174,13 +174,21 @@ def backwards(delta,params,name='',activation_deriv=sigmoid_deriv):
 
     elif activation_deriv == relu_deriv:
         dL_dz = (delta * relu_deriv(post_act)).T
+        # print('delta', delta.shape)
+        # print('relu', relu_deriv(pre_act).shape)
 
+    # print('dL_dz', dL_dz.shape)
     dz_dX = W.T
     dz_dW = X
     dz_db = 1
+    # print("W", W.shape)
+    # print("b", b.shape)
+
     
     # (40,25) @ (40,2) = (25,2).T = (2,25)
     grad_W = (dL_dz @ dz_dW).T
+    # print('dzdx', dz_dX.shape)
+    # print('dzdw', dz_dW.shape)
     assert grad_W.shape == W.shape #output:(25,4), layer1: (2,25)
 
     # (40,25) @ (25,2) = (40,2)
