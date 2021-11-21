@@ -16,8 +16,17 @@ def forward_and_loss(x, y, params):
 # what do you think these 4 classes are?
 g0 = np.random.multivariate_normal([3.6,40],[[0.05,0],[0,10]],10)
 g1 = np.random.multivariate_normal([3.9,10],[[0.01,0],[0,5]],10)
-g2 = np.random.multivariate_normal([3.4,30],[[0.25,0],[0,5]],10)
+g2 = np.random.multivariate_normal([3.4,30],[[0.25,0],[0,5]],10) # 8
 g3 = np.random.multivariate_normal([2.0,10],[[0.5,0],[0,10]],10)
+import matplotlib.pyplot as plt
+
+
+# plt.plot(g0[:,0], g0[:,1], 'x')
+plt.plot(g3[:,0], g3[:,1], 'x')
+
+plt.axis('equal')
+plt.show()
+
 x = np.vstack([g0,g1,g2,g3])
 
 # we will do XW + B
@@ -29,8 +38,8 @@ y_idx = np.array([0 for _ in range(10)] + [1 for _ in range(10)] + [2 for _ in r
 y = np.zeros((y_idx.shape[0],y_idx.max()+1))
 y[np.arange(y_idx.shape[0]),y_idx] = 1
 
-print('x', x.shape) # N=40, M=2
-print('y',y.shape)
+# print('x', x.shape) # N=40, M=2
+# print('y',y.shape)
 # exit(-1)
 # parameters in a dictionary
 params = {}
@@ -71,14 +80,12 @@ print('DONE Q2.2.3')
 # the derivative of cross-entropy(softmax(x)) is probs - 1[correct actions]
 delta1 = probs
 delta1[np.arange(probs.shape[0]),y_idx] -= 1
-print('delta1 shape', delta1.shape)
 
 # we already did derivative through softmax
 # so we pass in a linear_deriv, which is just a vector of ones
 # to make this a no-op
 
 delta2 = backwards(delta1,params,'output',linear_deriv)
-print('delta2shape', delta2.shape)
 # Implement backwards!
 backwards(delta2,params,'layer1',sigmoid_deriv)
 
@@ -94,7 +101,8 @@ print('End of 2.3')
 # Q 2.4
 n = x.shape[0]
 print('num total examples: ', n)
-batches = get_random_batches(x,y,5)
+batches, _ = get_random_batches(x,y,5)
+
 
 # print batch sizes
 print([_[0].shape[0] for _ in batches])
@@ -110,8 +118,9 @@ max_iters = 500
 learning_rate = 1e-3
 # with default settings, you should get loss < 35 and accuracy > 75%
 for itr in range(max_iters):
+    print(f"******STARTING ITER {itr}***\n")
     total_loss = 0
-    avg_acc = 0
+    accs = []
     for xb,yb in batches:
         # print(f'xb={xb},yb={yb}')
 
@@ -126,24 +135,26 @@ for itr in range(max_iters):
         # loss
         # be sure to add loss and accuracy to epoch totals 
         total_loss += loss 
-        avg_acc += acc
+        accs.append(acc)
 
         y_idx = np.argmax(yb, axis=1) # one hot to indices
         # backward
         delta1 = probs
         delta1[np.arange(probs.shape[0]),y_idx] -= 1
-        delta2 = backwards(delta1,params,'output',linear_deriv)
 
-        # apply gradient
-        params["Woutput"] = params["Woutput"] + (learning_rate*params["grad_Woutput"])
-        params["boutput"] = params["boutput"] + (learning_rate*params["grad_boutput"])
-   
+        delta2 = backwards(delta1,params,'output',linear_deriv)
         backwards(delta2,params,'layer1',sigmoid_deriv)
 
-        params["Wlayer1"] = params["Wlayer1"] + (learning_rate*params["grad_Wlayer1"])
-        params["blayer1"] = params["blayer1"] + (learning_rate*params["grad_blayer1"])
+        # apply gradient
+        params["Woutput"] = params["Woutput"] - (learning_rate*params["grad_Woutput"])
+        params["boutput"] = params["boutput"] - (learning_rate*params["grad_boutput"])
+   
+        # 
+        params["Wlayer1"] = params["Wlayer1"] - (learning_rate*params["grad_Wlayer1"])
+        params["blayer1"] = params["blayer1"] - (learning_rate*params["grad_blayer1"])
 
-    avg_acc /= batch_num # average acc across all batches 
+    avg_acc = np.mean(accs)
+    total_loss /= batch_num
         
     if itr % 100 == 0:
         print("itr: {:02d} \t loss: {:.2f} \t acc : {:.2f}".format(itr,total_loss,avg_acc))
@@ -161,7 +172,6 @@ import copy
 params_orig = copy.deepcopy(params)
 
 eps = 1e-6
-print('params.keys', params.keys())
 for k,v in params.items():
 
     if '_' in k: 
@@ -180,7 +190,6 @@ for k,v in params.items():
 
         flat_plus = v_orig_plus
         flat_minus = v_orig_minus
-        print('flatp', flat_plus.shape)
 
 
         params_plus[k] = flat_plus.reshape(vshape)
@@ -202,10 +211,7 @@ total_error = 0
 for k in params.keys():
     if 'grad_' in k:
         # relative error
-        print('aa', params[k])
-        
-        print('orig') 
-        print(params_orig[k])
+
         err = np.abs(params[k] - params_orig[k])/np.maximum(np.abs(params[k]),np.abs(params_orig[k]))
         err = err.sum()
         print('{} {:.2e}'.format(k, err))

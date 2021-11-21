@@ -13,8 +13,10 @@ def initialize_weights(in_size,out_size,params,name=''):
 
     W, b = None, None
 
-    W = np.zeros((in_size, out_size))
-    b = np.zeros((out_size,))
+    
+    W = np.random.uniform(-(np.sqrt(6))/(np.sqrt(in_size+out_size)), \
+                       (np.sqrt(6))/(np.sqrt(in_size+out_size)), size=(in_size,out_size))
+    b = np.zeros(out_size)
 
     params['W' + name] = W
     params['b' + name] = b
@@ -26,11 +28,7 @@ def initialize_weights(in_size,out_size,params,name=''):
 # x is a matrix
 # a sigmoid activation function
 def sigmoid(x):
-    print('**** Sigmoid ****')
 
-    ##########################
-    ##### your code here #####
-    ##########################
     res = 1 / (1+np.exp(-x))
     return res
 
@@ -69,13 +67,10 @@ def forward(X,params,name='',activation=sigmoid):
     # print('b', b.shape) # D,1
     # print((X @ W).shape)
     # print(np.expand_dims(b, 0).shape)
-    pre_act  = X @ W + np.expand_dims(b, 0) # (NxD)+(1xD)
+    pre_act  = X @ W + b
 
     # activation
-    if activation == "sigmoid":
-        post_act = sigmoid(pre_act)
-    else:
-        post_act = softmax(pre_act)
+    post_act = activation(pre_act)
 
 
     # store the pre-activation and post-activation values
@@ -83,6 +78,7 @@ def forward(X,params,name='',activation=sigmoid):
     params['cache_' + name] = (X, pre_act, post_act)
 
     return post_act
+
 
 ############################## Q 2.2.2  ##############################
 # x is [examples,classes]
@@ -100,6 +96,7 @@ def softmax(x):
 
     return res
 
+
 ############################## Q 2.2.3 ##############################
 # compute total loss and accuracy
 # y is one hot, size [examples,classes]
@@ -107,25 +104,15 @@ def softmax(x):
 def compute_loss_and_acc(y, probs):
     # print('**** Compute loss, acc ****')
 
-    loss, acc = None, None
-
-    ##########################
-    ##### your code here #####
-    ##########################
-
-    n, _ = y.shape
-
+    N = y.shape[0]
+    loss = -np.sum(y*np.log(probs)) / N
     gt_classes = np.argmax(y, axis=1)
     pred_classes = np.argmax(probs, axis=1)
-
-
-
-    loss = np.sum(y * -np.log(probs))
     correct = np.count_nonzero(gt_classes == pred_classes)
-    acc = correct / n
+    acc = correct / N
 
+    
     return loss, acc 
-
 ############################## Q 2.3 ##############################
 # we give this to you
 # because you proved it
@@ -136,11 +123,11 @@ def sigmoid_deriv(post_act):
     res = post_act*(1.0-post_act)
     return res
 
+
 def backwards(delta,params,name='',activation_deriv=sigmoid_deriv):
     # print(f'****Backwards, name={name}, activ={activation_deriv}****')
     """
     Do a backwards pass
-
     Keyword arguments:
     delta -- errors to backprop
     params -- a dictionary containing parameters
@@ -151,7 +138,6 @@ def backwards(delta,params,name='',activation_deriv=sigmoid_deriv):
     '''
     a = Wx+b
     o = sigmoid(a)
-
     W:25,4 25-->4
     X in: 40,25
     Wx+b=preact=40,4
@@ -216,6 +202,7 @@ def backwards(delta,params,name='',activation_deriv=sigmoid_deriv):
     
     return grad_X
 
+
 ############################## Q 2.4 ##############################
 # split x and y into random batches
 # return a list of [(batch1_x,batch1_y)...]
@@ -227,9 +214,6 @@ def get_random_batches(x,y,batch_size):
     # number of batches 
     num_chunks = N // batch_size 
     
-    # nd arrays only shuffled along first axis
-    x_shuff = np.random.shuffle(x)
-
     # randomize examples 
     shuffler = np.random.permutation(N)
     x_shuff = x[shuffler]
@@ -242,9 +226,34 @@ def get_random_batches(x,y,batch_size):
         # each batch should be x:bxM, y:bx1
         batches.append((x_shuff[i:i+batch_size], y_shuff[i:i+batch_size]))
         i += batch_size 
+    return batches, None
+
+    # x : N x M
+    # y : N x 1 
+    # N,M = x.shape
+
+    # # number of batches 
+    # num_chunks = N // batch_size 
+    
+    # # nd arrays only shuffled along first axis
+    # x_shuff = np.random.shuffle(x)
+
+    # # randomize examples 
+    # shuffler = np.random.permutation(N)
+    # x_shuff = x[shuffler]
+    # y_shuff = y[shuffler]
+    
+    # batches = []
+    # i = 0
+
+    # for j in range(num_chunks):
+    #     # each batch should be x:bxM, y:bx1
+    #     batches.append((x_shuff[i:i+batch_size], y_shuff[i:i+batch_size]))
+    #     i += batch_size 
 
 
-    ##########################
-    ##### your code here #####
-    ##########################
-    return batches
+    # ##########################
+    # ##### your code here #####
+    # ##########################
+    # print('batch', batches)
+    # return batches

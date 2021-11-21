@@ -32,14 +32,25 @@ for img in os.listdir('../images'):
                                 fill=False, edgecolor='red', linewidth=2)
         plt.gca().add_patch(rect)
     plt.show()
-    continue
     # find the rows using..RANSAC, counting, clustering, etc.
     ##########################
     ##### your code here #####
     ##########################
 
+    
 
-    # crop the bounding boxes
+    # Crop the characters:
+    for bbox in bboxes:
+        # Get the roi for each bounding rectangle:
+        x1, y1, x2, y2 = bbox
+
+        # Crop the roi:
+        cropped = bw[x1:x2, y1:y2]
+        cv2.imshow("Cropped", cropped)
+        cv2.waitKey(0)
+
+
+
     # note.. before you flatten, transpose the image (that's how the dataset is!)
     # consider doing a square crop, and even using np.pad() to get your images looking more like the dataset
     ##########################
@@ -55,4 +66,6 @@ for img in os.listdir('../images'):
     ##########################
     ##### your code here #####
     ##########################
+
+
     

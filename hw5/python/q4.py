@@ -28,7 +28,7 @@ def findLetters(image):
     # adaptive threshold 
     img_binary = cv2.adaptiveThreshold(img_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, windowSize, windowConstant)
  
-    # area filter 
+    # area filter 0o
     componentsNumber, labeledImage, componentStats, componentCentroids = \
     cv2.connectedComponentsWithStats(img_binary, connectivity=4)
 
