@@ -1,40 +1,60 @@
 import numpy as np
 import scipy.io
 from nn import *
+import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import ImageGrid
 
-# train_data = scipy.io.loadmat('../data/nist36_train.mat')
-# valid_data = scipy.io.loadmat('../data/nist36_valid.mat')
+def plot_weights(W):
+    print(f"**** PLOTTING WEIGHTS ****")
+    fig = plt.figure(1, (4,4.))
+    grid = ImageGrid(fig, 111,  # similar to subplot(111)
+                    nrows_ncols=(1,1),  # creates 2x2 grid of axes
+                    axes_pad=0.1,  # pad between axes in inch.
+                    )
+    W = W.reshape((32,32,64))
+    W = W.flatten()
+    sq= int(np.sqrt(len(W)))
+    W.shape = sq, sq
+    grid[0].imshow(W)  # The AxesGrid object work as a list of axes.
+    plt.show()
 
-# train_x, train_y = train_data['train_data'], train_data['train_labels']
-# valid_x, valid_y = valid_data['valid_data'], valid_data['valid_labels']
+train_data = scipy.io.loadmat('../data/nist36_train.mat')
+valid_data = scipy.io.loadmat('../data/nist36_valid.mat')
 
-# print('train x', train_x.shape)
-# print('train_y', train_y.shape)
-# max_iters = 50
-# # pick a batch size, learning rate
-# batch_size = 32
-# learning_rate = 1e-3
-# hidden_size = 64
-# ##########################
-# ##### your code here #####
-# ##########################
+train_x, train_y = train_data['train_data'], train_data['train_labels']
+valid_x, valid_y = valid_data['valid_data'], valid_data['valid_labels']
 
-# batches, _ = get_random_batches(train_x,train_y,batch_size)
-# batch_num = len(batches)
+print('train x', train_x.shape)
+print('train_y', train_y.shape)
+max_iters = 50
+# pick a batch size, learning rate
+batch_size = 32
+learning_rate = 1e-3
+hidden_size = 64
+##########################
+##### your code here #####
+##########################
 
-# params = {}
+batches, _ = get_random_batches(train_x,train_y,batch_size)
+batch_num = len(batches)
 
-# # initialize layers here
-# ##########################
-# ##### your code here #####
-# ##########################
-# # initialize a layer
-# # N = 10800 examples
-# # M = 1024 feature dim
-# # H = 64 hidden 
-# # C = 36 classes
-# initialize_weights(1024,64,params,'layer1')
-# initialize_weights(64,36,params,'output')
+params = {}
+
+# initialize layers here
+##########################
+##### your code here #####
+##########################
+# initialize a layer
+# N = 10800 examples
+# M = 1024 feature dim
+# H = 64 hidden 
+# C = 36 classes
+initialize_weights(1024,64,params,'layer1')
+initialize_weights(64,36,params,'output')
+
+
+print("PLOTTING INITIAL FIRST LAYER WEIGHTS")
+plot_weights(params['Wlayer1'])
 
 # # with default settings, you should get loss < 150 and accuracy > 80%
 # n = train_x.shape[0]
@@ -98,7 +118,6 @@ from nn import *
 #         print("itr: {:02d} \t loss: {:.2f} \t acc : {:.2f}".format(itr,total_loss,avg_acc))
 
 
-# import matplotlib.pyplot as plt
 
 
 # plt.plot(range(max_iters), avg_accs, '-b', label="accuracy")
@@ -109,8 +128,10 @@ from nn import *
 
 # # run on validation set and report accuracy! should be above 75%
 
+# print("***** VALIDATION *********")
+
 # val_batches, _ = get_random_batches(valid_x,valid_y,1)#batch_size)
-# val_batch_num = len(batches)
+# val_batch_num = len(val_batches)
 
 # val_accs = []
 # val_losses = []
@@ -147,7 +168,41 @@ from nn import *
 #     pickle.dump(saved_params, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 weights = np.load('../out/q3_weights.pickle', allow_pickle=True)
-print(weights)
+
+test_data = scipy.io.loadmat('../data/nist36_test.mat')
+test_x, test_y = test_data['test_data'], test_data['test_labels']
+
+
+print("***** TESTING *********")
+test_batches, _ = get_random_batches(test_x,test_y,1)
+v_batch_num = len(test_batches)
+test_params = weights
+test_accs = []
+test_losses = []
+confusion_matrix = np.zeros((test_y.shape[1],test_y.shape[1]))
+for test_xb,test_yb in test_batches:
+    # print(f'xb={xb},yb={yb}')
+
+    test_h1 = forward(test_xb, test_params,name='layer1',activation=sigmoid)
+    test_probs= forward(test_h1, test_params,name='output',activation=softmax)
+
+    # fill in conf matrix (gt: rows, preds: cols)
+    testy_preds = np.argmax(test_probs, axis=1) # o
+    testy_gt = np.argmax(test_yb, axis=1)
+    print(testy_preds, testy_gt)
+    confusion_matrix[testy_gt[0]][testy_preds[0]] += 1
+
+
+    # print('Probs', probs.shape)
+    test_loss, test_acc = compute_loss_and_acc(test_yb, test_probs)
+    print(f'test_loss={test_loss},test_acc={test_acc}')
+
+    test_losses.append(test_loss)
+    test_accs.append(test_acc)
+
+
+
+
 # Q3.3
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
@@ -163,42 +218,12 @@ def squarify(M,val):
         padding=((0,b-a),(0,0))
     return np.pad(M,padding,mode='constant',constant_values=val)
 
-first_layer_weights = []
-for k, v in weights.items():
-    if not 'layer1' in k: continue
-    first_layer_weights += [[k,v]]
-    
-for i in range(len(first_layer_weights)):
-    fig = plt.figure(1, (4,4.))
-    grid = ImageGrid(fig, 111,  # similar to subplot(111)
-                    nrows_ncols=(1,1),  # creates 2x2 grid of axes
-                    axes_pad=0.1,  # pad between axes in inch.
-                    )
-    k, v = first_layer_weights[i]
-    print('param: ', k)
-    try:
-        x,y = v.shape
-    except:
-        v = np.expand_dims(v, 1)
-        x,y = v.shape
-    
+print("**** PLOTTING FIRST LAYER WEIGHTS ****")
+plot_weights(weights['Wlayer1'])
 
-    im = v.flatten()
-    sq= int(np.sqrt(len(im)))
-        
-    im.shape = sq, sq
-    grid[0].imshow(im)  # The AxesGrid object work as a list of axes.
-
-    plt.show()
 
 
 # Q3.4
-confusion_matrix = np.zeros((train_y.shape[1],train_y.shape[1]))
-
-# compute confusion matrix here
-##########################
-##### your code here #####
-##########################
 
 import string
 plt.imshow(confusion_matrix,interpolation='nearest')
