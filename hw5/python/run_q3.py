@@ -4,6 +4,8 @@ from nn import *
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
+def one_hot_to_idx(y):
+    return np.argmax(y, axis=1)
 def plot_weights(W):
     print(f"**** PLOTTING WEIGHTS ****")
     fig = plt.figure(1, (4,4.))
@@ -23,6 +25,7 @@ valid_data = scipy.io.loadmat('../data/nist36_valid.mat')
 
 train_x, train_y = train_data['train_data'], train_data['train_labels']
 valid_x, valid_y = valid_data['valid_data'], valid_data['valid_labels']
+
 
 print('train x', train_x.shape)
 print('train_y', train_y.shape)
@@ -61,93 +64,93 @@ plot_weights(params['Wlayer1'])
 # print('num total train examples: ', n)
 
 
-# print("******STARTING TRAINING LOOP********\n\n")
-# accs = []
-# losses = []
-# avg_accs = []
-# # with default settings, you should get loss < 35 and accuracy > 75%
-# for itr in range(max_iters):
-#     print(f"******STARTING ITER {itr}***\n")
-#     total_loss = 0
-#     accs = []
-#     for xb,yb in batches:
-#         # print(f'xb={xb},yb={yb}')
+print("******STARTING TRAINING LOOP********\n\n")
+accs = []
+losses = []
+avg_accs = []
+# with default settings, you should get loss < 35 and accuracy > 75%
+for itr in range(max_iters):
+    print(f"******STARTING ITER {itr}***\n")
+    total_loss = 0
+    accs = []
+    for xb,yb in batches:
+        # print(f'xb={xb},yb={yb}')
 
-#         # forward
-#         # print('xb', xb.shape) # (5,2)
-#         # print('yb', yb.shape) # (5,4)
-#         h1 = forward(xb,params,name='layer1',activation=sigmoid)
-#         probs= forward(h1, params,name='output',activation=softmax)
+        # forward
+        # print('xb', xb.shape) # (5,2)
+        # print('yb', yb.shape) # (5,4)
+        h1 = forward(xb,params,name='layer1',activation=sigmoid)
+        probs= forward(h1, params,name='output',activation=softmax)
 
 
-#         # print('Probs', probs.shape)
-#         loss, acc = compute_loss_and_acc(yb, probs)
+        # print('Probs', probs.shape)
+        loss, acc = compute_loss_and_acc(yb, probs)
 
-#         # if itr % 10 == 0:
-#             # print(f'curr batch loss ={loss}, acc={acc}')
+        # if itr % 10 == 0:
+            # print(f'curr batch loss ={loss}, acc={acc}')
 
-#         # loss
-#         # be sure to add loss and accuracy to epoch totals 
-#         total_loss += loss 
-#         accs.append(acc)
+        # loss
+        # be sure to add loss and accuracy to epoch totals 
+        total_loss += loss 
+        accs.append(acc)
 
-#         y_idx = np.argmax(yb, axis=1) # one hot to indices
+        y_idx = np.argmax(yb, axis=1) # one hot to indices
         
 
-#         # backward derivative of SCE 
-#         delta1 = probs
-#         delta1[np.arange(probs.shape[0]),y_idx] -= 1
+        # backward derivative of SCE 
+        delta1 = probs
+        delta1[np.arange(probs.shape[0]),y_idx] -= 1
 
-#         delta2 = backwards(delta1,params,'output',linear_deriv)
-#         backwards(delta2,params,'layer1',sigmoid_deriv)
+        delta2 = backwards(delta1,params,'output',linear_deriv)
+        backwards(delta2,params,'layer1',sigmoid_deriv)
 
-#         # apply gradient
-#         params["Woutput"] = params["Woutput"] - (learning_rate*params["grad_Woutput"])
-#         params["boutput"] = params["boutput"] - (learning_rate*params["grad_boutput"])
+        # apply gradient
+        params["Woutput"] = params["Woutput"] - (learning_rate*params["grad_Woutput"])
+        params["boutput"] = params["boutput"] - (learning_rate*params["grad_boutput"])
    
 
-#         params["Wlayer1"] = params["Wlayer1"] - (learning_rate*params["grad_Wlayer1"])
-#         params["blayer1"] = params["blayer1"] - (learning_rate*params["grad_blayer1"])
+        params["Wlayer1"] = params["Wlayer1"] - (learning_rate*params["grad_Wlayer1"])
+        params["blayer1"] = params["blayer1"] - (learning_rate*params["grad_blayer1"])
 
-#     avg_acc = np.mean(accs)
-#     avg_accs.append(avg_acc)
-#     total_loss /= batch_num
-#     losses.append(total_loss)
+    avg_acc = np.mean(accs)
+    avg_accs.append(avg_acc)
+    total_loss /= batch_num
+    losses.append(total_loss)
     
-#     if itr % 1 == 0:
-#         print("itr: {:02d} \t loss: {:.2f} \t acc : {:.2f}".format(itr,total_loss,avg_acc))
+    if itr % 1 == 0:
+        print("itr: {:02d} \t loss: {:.2f} \t acc : {:.2f}".format(itr,total_loss,avg_acc))
 
 
 
 
-# plt.plot(range(max_iters), avg_accs, '-b', label="accuracy")
-# plt.plot(range(max_iters), losses, '-r', label='loss')
+plt.plot(range(max_iters), avg_accs, '-b', label="accuracy")
+plt.plot(range(max_iters), losses, '-r', label='loss')
 
-# plt.show()
-
-
-# # run on validation set and report accuracy! should be above 75%
-
-# print("***** VALIDATION *********")
-
-# val_batches, _ = get_random_batches(valid_x,valid_y,1)#batch_size)
-# val_batch_num = len(val_batches)
-
-# val_accs = []
-# val_losses = []
-# for val_xb,val_yb in val_batches:
-#     # print(f'xb={xb},yb={yb}')
-
-#     val_h1 = forward(val_xb,params,name='layer1',activation=sigmoid)
-#     val_probs= forward(val_h1, params,name='output',activation=softmax)
+plt.show()
 
 
-#     # print('Probs', probs.shape)
-#     val_loss, val_acc = compute_loss_and_acc(val_yb, val_probs)
-#     print(f'val_loss={val_loss},val_acc={val_acc}')
+# run on validation set and report accuracy! should be above 75%
 
-#     val_losses.append(val_loss)
-#     val_accs.append(val_acc)
+print("***** VALIDATION *********")
+
+val_batches, _ = get_random_batches(valid_x,valid_y,1)#batch_size)
+val_batch_num = len(val_batches)
+
+val_accs = []
+val_losses = []
+for val_xb,val_yb in val_batches:
+    # print(f'xb={xb},yb={yb}')
+
+    val_h1 = forward(val_xb,params,name='layer1',activation=sigmoid)
+    val_probs= forward(val_h1, params,name='output',activation=softmax)
+
+
+    # print('Probs', probs.shape)
+    val_loss, val_acc = compute_loss_and_acc(val_yb, val_probs)
+    print(f'val_loss={val_loss},val_acc={val_acc}')
+
+    val_losses.append(val_loss)
+    val_accs.append(val_acc)
 
 
 
@@ -156,22 +159,21 @@ plot_weights(params['Wlayer1'])
 # ##### your code here #####
 # ##########################
 
-# print('Validation accuracy: ',val_acc)
-# if True: # view the data
-#     for crop in xb:
-#         import matplotlib.pyplot as plt
-#         plt.imshow(crop.reshape(32,32).T)
-#         # plt.show()
-# import pickle
-# saved_params = {k:v for k,v in params.items() if '_' not in k}
-# with open('q3_weights.pickle', 'wb') as handle:
-#     pickle.dump(saved_params, handle, protocol=pickle.HIGHEST_PROTOCOL)
+print('Validation accuracy: ',val_acc)
+if True: # view the data
+    for crop in xb:
+        import matplotlib.pyplot as plt
+        plt.imshow(crop.reshape(32,32).T)
+        # plt.show()
+import pickle
+saved_params = {k:v for k,v in params.items() if '_' not in k}
+with open('q3_weights.pickle', 'wb') as handle:
+    pickle.dump(saved_params, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 weights = np.load('../out/q3_weights.pickle', allow_pickle=True)
 
 test_data = scipy.io.loadmat('../data/nist36_test.mat')
 test_x, test_y = test_data['test_data'], test_data['test_labels']
-
 
 print("***** TESTING *********")
 test_batches, _ = get_random_batches(test_x,test_y,1)

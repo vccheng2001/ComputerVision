@@ -2,6 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches
+import scipy.io
 
 import skimage
 import skimage.measure
@@ -20,12 +21,18 @@ import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 
+
+
+
+
+
 for img in os.listdir('../images'):
     print('Processing img: ', img)
-    im1 = skimage.img_as_float(skimage.io.imread(os.path.join('../images',img)))
-    bboxes, bw = findLetters(im1)
+    im = skimage.img_as_float(skimage.io.imread(os.path.join('../images',img)))
+    bboxes, img_bw = findLetters(im)
 
-    plt.imshow(bw)
+    plt.imshow(img_bw, cmap='gray')
+    # plt.show()
     for bbox in bboxes:
         minr, minc, maxr, maxc = bbox
         rect = matplotlib.patches.Rectangle((minc, minr), maxc - minc, maxr - minr,
@@ -37,17 +44,29 @@ for img in os.listdir('../images'):
     ##### your code here #####
     ##########################
 
-    
 
-    # Crop the characters:
+
+    # Crop
+    processed_images = []
     for bbox in bboxes:
-        # Get the roi for each bounding rectangle:
-        x1, y1, x2, y2 = bbox
 
-        # Crop the roi:
-        cropped = bw[x1:x2, y1:y2]
-        cv2.imshow("Cropped", cropped)
+
+      
+        x1, y1, x2, y2 = bbox
+        # print(x1,x2, '   ', y1,y2)
+
+        cropped = img_bw[x1:x2, y1:y2] # crop from full image 
+        
+        # padded = squarify(cropped, 0)
+        resized = cv2.resize(src=cropped, dsize=(20,20), interpolation = cv2.INTER_AREA)
+        padded = np.pad(resized, (6,6), 'constant', constant_values=(1,1))
+        cv2.imshow("Cropped and resized", resized)
         cv2.waitKey(0)
+
+        inp = padded.T.flatten()
+        processed_images.append(np.expand_dims(inp,0))
+        
+
 
 
 
@@ -56,16 +75,38 @@ for img in os.listdir('../images'):
     ##########################
     ##### your code here #####
     ##########################
-    
-    # load the weights
     # run the crops through your neural network and print them out
     import pickle
     import string
     letters = np.array([_ for _ in string.ascii_uppercase[:26]] + [str(_) for _ in range(10)])
-    params = pickle.load(open('q3_weights.pickle','rb'))
-    ##########################
-    ##### your code here #####
-    ##########################
+    test_params = pickle.load(open('./q3_weights.pickle','rb'))
+    test_x = processed_images
+
+
+    # (N, M=1024) (N, K=36)
+
+    print("***** TESTING *********")
+   
+    test_accs = []
+    test_losses = []
+    for test_xb in test_x:
+        # print(f'xb={xb},yb={yb}')
+        
+
+
+        test_h1 = forward(test_xb, test_params,name='layer1',activation=sigmoid)
+        test_probs= forward(test_h1, test_params,name='output',activation=softmax)
+
+        # fill in conf matrix (gt: rows, preds: cols)
+        testy_preds = np.argmax(test_probs, axis=1) # o
+        print(letters[testy_preds[0]], end=' ')
+
+        predicted = letters[testy_preds[0]]
+        cropped = test_xb.reshape(32,32)
+        cv2.imshow(predicted, cropped.T)
+        cv2.waitKey(0)
+
+
 
 
     
