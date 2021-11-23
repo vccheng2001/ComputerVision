@@ -26,7 +26,7 @@ warnings.simplefilter(action='ignore', category=UserWarning)
 
 
 
-for img in os.listdir('../images'):
+for img in os.listdir('../images')[:1]:
     print('Processing img: ', img)
     im = skimage.img_as_float(skimage.io.imread(os.path.join('../images',img)))
     bboxes, img_bw = findLetters(im)
@@ -58,12 +58,23 @@ for img in os.listdir('../images'):
         cropped = img_bw[x1:x2, y1:y2] # crop from full image 
         
         # padded = squarify(cropped, 0)
-        resized = cv2.resize(src=cropped, dsize=(20,20), interpolation = cv2.INTER_AREA)
-        padded = np.pad(resized, (6,6), 'constant', constant_values=(1,1))
-        cv2.imshow("Cropped and resized", resized)
+        resized = cv2.resize(src=cropped, dsize=(24,24), interpolation = cv2.INTER_AREA)
+        padded = np.pad(resized, (4,4), 'constant', constant_values=(1,1))
+       
+
+        kernel = np.ones((5,5),np.uint8)
+        eroded = cv2.erode(padded,kernel,iterations = 1)
+        eroded = eroded * 255
+
+        thresh =  160
+        eroded = cv2.threshold(eroded, thresh, 255, cv2.THRESH_BINARY)[1]
+
+        eroded /= 255
+
+        cv2.imshow("processed", eroded)
         cv2.waitKey(0)
 
-        inp = padded.T.flatten()
+        inp = eroded.T.flatten()
         processed_images.append(np.expand_dims(inp,0))
         
 
@@ -81,6 +92,7 @@ for img in os.listdir('../images'):
     letters = np.array([_ for _ in string.ascii_uppercase[:26]] + [str(_) for _ in range(10)])
     test_params = pickle.load(open('./q3_weights.pickle','rb'))
     test_x = processed_images
+    
 
 
     # (N, M=1024) (N, K=36)
@@ -91,6 +103,21 @@ for img in os.listdir('../images'):
     for test_xb in test_x:
         # print(f'xb={xb},yb={yb}')
         
+        # image = cv2.imread("./B.jpg")
+        # img_gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        # thresh = 127
+        # img_gray = cv2.threshold(img_gray, thresh, 255, cv2.THRESH_BINARY)[1]
+        # kernel = np.ones((5,5),np.uint8)
+
+        # img_gray = cv2.erode(img_gray,kernel,iterations = 1)
+        # cv2.imshow("Cropped and resized", img_gray)
+        # cv2.waitKey(0)
+
+
+        # test_xb = cv2.resize(img_gray, (32,32), interpolation = cv2.INTER_AREA)
+        # test_xb = test_xb.T.flatten()
+        # test_xb = np.expand_dims(test_xb, 0)
+
 
 
         test_h1 = forward(test_xb, test_params,name='layer1',activation=sigmoid)
@@ -102,8 +129,8 @@ for img in os.listdir('../images'):
 
         predicted = letters[testy_preds[0]]
         cropped = test_xb.reshape(32,32)
-        cv2.imshow(predicted, cropped.T)
-        cv2.waitKey(0)
+        # cv2.imshow(predicted, cropped.T)
+        # cv2.waitKey(0)
 
 
 

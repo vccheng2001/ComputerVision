@@ -42,7 +42,13 @@ def findLetters(image):
 
     # convert to grayscale
     img_gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    thresh = 127
+    img_gray = cv2.threshold(img_gray, thresh, 255, cv2.THRESH_BINARY)[1]
 
+
+
+
+   
 
     # Set the adaptive thresholding (gasussian) parameters:
     windowSize = 31
@@ -50,11 +56,14 @@ def findLetters(image):
     # adaptive threshold 
     img_binary = cv2.adaptiveThreshold(img_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, windowSize, windowConstant)
  
-    # area filter 0o
+    cv2.imshow("img_binary", img_binary)
+    cv2.waitKey(0)
+    
+    # area     filter 0o
     componentsNumber, labeledImage, componentStats, componentCentroids = \
     cv2.connectedComponentsWithStats(img_binary, connectivity=4)
 
-    minArea = 1800
+    minArea = 2500
 
     # Get the indices/labels of the remaining components based on the area stat
     # (skip the background component at index 0)
@@ -72,6 +81,7 @@ def findLetters(image):
     # closing: https://opencv24-python-tutorials.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_morphological_ops/py_morphological_ops.html
     img_closing = cv2.morphologyEx(filteredImage, cv2.MORPH_CLOSE, struct_elem,  None, None, 1, cv2.BORDER_REFLECT101)
 
+    
     # find bounding boxes
     contours, hierarchy = cv2.findContours(img_closing, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
     
@@ -98,4 +108,4 @@ def findLetters(image):
 
 
    
-    return bboxes, img_gray /255
+    return bboxes, img_gray / 255
