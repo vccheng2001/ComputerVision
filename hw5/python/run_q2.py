@@ -2,6 +2,7 @@ import numpy as np
 # you should write your functions in nn.py
 from nn import *
 from util import *
+import copy
 
 
 def forward_and_loss(x, y, params):
@@ -29,6 +30,7 @@ plt.show()
 
 x = np.vstack([g0,g1,g2,g3])
 
+
 # we will do XW + B
 # that implies that the data is N x D
 
@@ -38,8 +40,8 @@ y_idx = np.array([0 for _ in range(10)] + [1 for _ in range(10)] + [2 for _ in r
 y = np.zeros((y_idx.shape[0],y_idx.max()+1))
 y[np.arange(y_idx.shape[0]),y_idx] = 1
 
-# print('x', x.shape) # N=40, M=2
-# print('y',y.shape)
+print('x', x.shape) # N=40, M=2
+print('y',y.shape)
 # exit(-1)
 # parameters in a dictionary
 params = {}
@@ -153,6 +155,12 @@ for itr in range(max_iters):
         params["Wlayer1"] = params["Wlayer1"] - (learning_rate*params["grad_Wlayer1"])
         params["blayer1"] = params["blayer1"] - (learning_rate*params["grad_blayer1"])
 
+        params_orig = copy.deepcopy(params)
+        params_numeric = numeric_grad(params_orig)
+        total_error = check_grad_err(params_orig, params_numeric)
+        print('total error', total_error)
+
+
     avg_acc = np.mean(accs)
     total_loss /= batch_num
         
@@ -168,53 +176,46 @@ for itr in range(max_iters):
 ##########################
 
 # save the old params
-import copy
+
 params_orig = copy.deepcopy(params)
+params_plus = copy.deepcopy(params_orig) 
+params_minus = copy.deepcopy(params_orig) 
 
-eps = 1e-6
-for k,v in params.items():
+def numeric_grad(params_orig, eps = 1e-6):
+    for k,v in params.items():
 
-    if '_' in k: 
-        continue
-
-    vshape = v.shape
-    flat = v.flatten()
-    for i in range(len(v)):
-        params_plus =copy.deepcopy(params_orig)
-        params_minus =copy.deepcopy(params_orig)
-
-        v_orig_plus = copy.deepcopy(flat)
-        v_orig_minus = copy.deepcopy(flat)
-        v_orig_plus[i] += eps
-        v_orig_minus[i] -= eps
-
-        flat_plus = v_orig_plus
-        flat_minus = v_orig_minus
+        if '_' in k: 
+            continue
 
 
-        params_plus[k] = flat_plus.reshape(vshape)
-        params_minus[k] = flat_minus.reshape(vshape)
+        
+        epsilons = np.full(v.shape, eps)
 
-        loss_plus, _ = forward_and_loss(x, y, params_plus)
-        loss_minus, _ = forward_and_loss(x, y, params_minus)
+        params_plus[k] += epsilons # W+
+        params_minus[k] -= epsilons # W-
+    
+        loss_plus, _ = forward_and_loss(x, y, params_plus) # Loss+
+        loss_minus, _ = forward_and_loss(x, y, params_minus) # Loss-
 
-        grad_shape = params['grad_'+k].shape
-        flat_grad = params['grad_'+k].flatten()
-        flat_grad[i] = (loss_plus - loss_minus) / (2*eps)
         # set each grad value 
-        params['grad_'+k] = flat_grad.reshape(grad_shape)
-            
+        params['grad_'+k] = (loss_plus - loss_minus) / (2*eps)
+                
+    return params
 
 
+def check_grad_err(params_orig, params):
+    total_error = 0
+    for k in params.keys():
+        if 'grad_' in k:
+            # relative error
 
-total_error = 0
-for k in params.keys():
-    if 'grad_' in k:
-        # relative error
+            err = np.abs(params[k] - params_orig[k])/np.maximum(np.abs(params[k]),np.abs(params_orig[k]))
+            err = err.sum()
+            print('{} {:.2e}'.format(k, err))
+            total_error += err
+    return total_error
 
-        err = np.abs(params[k] - params_orig[k])/np.maximum(np.abs(params[k]),np.abs(params_orig[k]))
-        err = err.sum()
-        print('{} {:.2e}'.format(k, err))
-        total_error += err
+params_num = numeric_grad(params_orig)
+total_error = check_grad_err(params_orig, params_num)
 # should be less than 1e-4
 print('total {:.2e}'.format(total_error))
