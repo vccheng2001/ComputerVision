@@ -3,6 +3,9 @@ import scipy.io
 from nn import *
 from collections import Counter
 from util import *
+from skimage.metrics import peak_signal_noise_ratio
+import matplotlib.pyplot as plt
+
 train_data = scipy.io.loadmat('../data/nist36_train.mat')
 
 # we don't need labels now!
@@ -65,11 +68,8 @@ for itr in range(max_iters):
         #   so you should be able to write your loop without any special conditions
 
         h1 = forward(xb,params,name='layer1',activation=relu)
-        # print('h1', h1.shape)
         h2 = forward(h1,params,name='layer2',activation=relu)
-        # print('h2', h2.shape)
         h3 = forward(h2,params,name='layer3',activation=relu)
-        # print('h3', h3.shape)
         image_out = forward(h3,params,name='output',activation=sigmoid)
         assert image_out.shape == xb.shape
 
@@ -78,8 +78,6 @@ for itr in range(max_iters):
         # loss
         # be sure to add loss and accuracy to epoch totals 
         total_loss += loss 
-
-        
 
         # backward
         delta1 = 2*(image_out - xb)
@@ -118,36 +116,43 @@ val_batch_num = len(val_batches)
 n, m = valid_x.shape
 val_accs = []
 val_losses = []
+psnrs = []
+import string 
+letters = np.array([_ for _ in string.ascii_uppercase[:26]] + [str(_) for _ in range(10)])
+
+i = 0
 for val_xb,val_yb in val_batches:
     # print(f'xb={xb},yb={yb}')
+
+    val_yb_idx = np.argmax(val_yb, axis=1) # o
 
     val_h1 = forward(val_xb,params,name='layer1',activation=relu)
     val_h2 = forward(val_h1,params,name='layer2',activation=relu)
     val_h3 = forward(val_h2,params,name='layer3',activation=relu)
+
     val_image_out = forward(val_h3,params,name='output',activation=sigmoid)
+
     assert val_image_out.shape == val_xb.shape
+    
+    if letters[val_yb_idx] in ["V", "Y"] and i < 8:
+        i += 1
+        plt.figure()
+        f, axarr = plt.subplots(2,2)
+        axarr[0,0].imshow(val_xb.reshape(32,32).T)
+        axarr[0,1].imshow(val_image_out.reshape(32,32).T)
+        f.show()
+
+
+    # psnr(gt, output)
+    psnr = peak_signal_noise_ratio(val_xb, val_image_out)
+
 
     val_loss = np.sum((val_xb-val_image_out)**2) / n
-
     val_losses.append(val_loss)
-import matplotlib.pyplot as plt
+    psnrs.append(psnr)
 
-plt.figure()
-f, axarr = plt.subplots(2,2)
-axarr[0,0].imshow(val_xb.reshape(32,32).T)
-axarr[0,1].imshow(val_image_out.reshape(32,32).T)
-f.show()
-
-
-# ##########################
-# ##### your code here #####
-# ##########################
-
-# if True: # view the data
-#     for crop in val_xb:
-#         import matplotlib.pyplot as plt
-#         plt.imshow(crop.reshape(32,32).T)
-#         plt.show()
+psnr = np.mean(psnrs)
+print('Mean PSNR across validation set', psnr)
 
 
 
@@ -160,9 +165,5 @@ plt.plot(range(max_iters), losses, '-r', label='loss')
 plt.show()
 
 # Q5.3.2
-from skimage.metrics import peak_signal_noise_ratio
 # evaluate PSNR
-##########################
-##### your code here #####
-##########################
-# peak_signal_noise_ratio
+

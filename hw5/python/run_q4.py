@@ -97,7 +97,7 @@ for img in os.listdir('../images'):
         test_probs= forward(test_h1, test_params,name='output',activation=softmax)
 
         # fill in conf matrix (gt: rows, preds: cols)
-        testy_preds = np.argmax(test_probs, axis=1) # o
+        testy_preds = np.argmax(test_probs, axis=1) 
         print(letters[testy_preds[0]], end=' ')
 
         predicted = letters[testy_preds[0]]
