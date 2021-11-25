@@ -5,7 +5,7 @@ from collections import Counter
 from util import *
 from skimage.metrics import peak_signal_noise_ratio
 import matplotlib.pyplot as plt
-
+import string
 train_data = scipy.io.loadmat('../data/nist36_train.mat')
 
 # we don't need labels now!
@@ -33,20 +33,21 @@ initialize_weights(32,32,params,'layer2')
 initialize_weights(32,32,params,'layer3')
 initialize_weights(32,1024,params,'output')
 
-
+# i
 layers = ['output', 'layer3', 'layer2', 'layer1']
 for layer in layers:
     params["MW"+layer] = 0
     params["Mb"+layer] = 0
 
-
-
+# 
 train_data = scipy.io.loadmat('../data/nist36_train.mat')
 valid_data = scipy.io.loadmat('../data/nist36_valid.mat')
 
+#
 train_x, train_y = train_data['train_data'], train_data['train_labels']
 valid_x, valid_y = valid_data['valid_data'], valid_data['valid_labels']
 
+# 
 batches, _ = get_random_batches(train_x,train_y,batch_size)
 batch_num = len(batches)
 
@@ -117,7 +118,6 @@ n, m = valid_x.shape
 val_accs = []
 val_losses = []
 psnrs = []
-import string 
 letters = np.array([_ for _ in string.ascii_uppercase[:26]] + [str(_) for _ in range(10)])
 
 i = 0
@@ -133,7 +133,7 @@ for val_xb,val_yb in val_batches:
     val_image_out = forward(val_h3,params,name='output',activation=sigmoid)
 
     assert val_image_out.shape == val_xb.shape
-    
+
     if letters[val_yb_idx] in ["V", "Y"] and i < 8:
         i += 1
         plt.figure()

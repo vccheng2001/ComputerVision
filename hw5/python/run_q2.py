@@ -155,10 +155,7 @@ for itr in range(max_iters):
         params["Wlayer1"] = params["Wlayer1"] - (learning_rate*params["grad_Wlayer1"])
         params["blayer1"] = params["blayer1"] - (learning_rate*params["grad_blayer1"])
 
-        params_orig = copy.deepcopy(params)
-        params_numeric = numeric_grad(params_orig)
-        total_error = check_grad_err(params_orig, params_numeric)
-        print('total error', total_error)
+
 
 
     avg_acc = np.mean(accs)
@@ -177,7 +174,45 @@ for itr in range(max_iters):
 
 # save the old params
 
+
+# run backprop over entire dataset, save as <params_orig>
+params = {}
+
+# Q 2.1
+# initialize a layer
+initialize_weights(2,25,params,'layer1')
+initialize_weights(25,4,params,'output')
+n = x.shape[0]
+max_iters = 500
+batches, _ = get_random_batches(x,y,n)
+assert(len(batches) == 1)
+# with default settings, you should get loss < 35 and accuracy > 75%
+for itr in range(max_iters):
+
+    for xb,yb in batches:
+        
+        h1= forward(xb,params,name='layer1',activation=sigmoid)
+        probs= forward(h1, params,name='output',activation=softmax)
+        loss, acc = compute_loss_and_acc(yb, probs)
+
+        delta1 = probs
+        y_idx = np.argmax(yb, axis=1) # one hot to indices
+        delta1[np.arange(probs.shape[0]),y_idx] -= 1
+
+        delta2 = backwards(delta1,params,'output',linear_deriv)
+        backwards(delta2,params,'layer1',sigmoid_deriv)
+
+        # apply gradient
+        params["Woutput"] = params["Woutput"] - (learning_rate*params["grad_Woutput"])
+        params["boutput"] = params["boutput"] - (learning_rate*params["grad_boutput"])
+
+        # 
+        params["Wlayer1"] = params["Wlayer1"] - (learning_rate*params["grad_Wlayer1"])
+        params["blayer1"] = params["blayer1"] - (learning_rate*params["grad_blayer1"])
+
 params_orig = copy.deepcopy(params)
+
+
 params_plus = copy.deepcopy(params_orig) 
 params_minus = copy.deepcopy(params_orig) 
 
@@ -216,6 +251,8 @@ def check_grad_err(params_orig, params):
     return total_error
 
 params_num = numeric_grad(params_orig)
+
+
 total_error = check_grad_err(params_orig, params_num)
 # should be less than 1e-4
 print('total {:.2e}'.format(total_error))
