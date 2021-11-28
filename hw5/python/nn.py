@@ -53,21 +53,11 @@ def forward(X,params,name='',activation=sigmoid):
 
 
 
-
-    ##########################
-    ##### your code here #####
-    ##########################
-
     # linear combination 
 
     N, M = X.shape
     M, D = W.shape
-    # print(f'N={N}, M={M}, D={D}')
-    # print('W', W.shape) # M,D
-    # print('X', X.shape) # N,M
-    # print('b', b.shape) # D,1
-    # print((X @ W).shape)
-    # print(np.expand_dims(b, 0).shape)
+   
     pre_act  = X @ W + b
 
     # activation
@@ -85,12 +75,6 @@ def forward(X,params,name='',activation=sigmoid):
 # x is [examples,classes]
 # softmax should be done for each row
 def softmax(x):
-    # print('**** Softmax ****')
-    res = None
-
-    ##########################
-    ##### your code here #####
-    ##########################
 
     exp = np.exp(x-np.max(x))
     res = exp / np.sum(exp, axis=1, keepdims=True)
@@ -230,6 +214,8 @@ def get_random_batches(x,y,batch_size):
     
     # randomize examples 
     shuffler = np.random.permutation(N)
+
+    # Use same shuffler for x, y!!!
     x_shuff = x[shuffler]
     y_shuff = y[shuffler]
     
@@ -242,32 +228,3 @@ def get_random_batches(x,y,batch_size):
         i += batch_size 
     return batches, None
 
-    # x : N x M
-    # y : N x 1 
-    # N,M = x.shape
-
-    # # number of batches 
-    # num_chunks = N // batch_size 
-    
-    # # nd arrays only shuffled along first axis
-    # x_shuff = np.random.shuffle(x)
-
-    # # randomize examples 
-    # shuffler = np.random.permutation(N)
-    # x_shuff = x[shuffler]
-    # y_shuff = y[shuffler]
-    
-    # batches = []
-    # i = 0
-
-    # for j in range(num_chunks):
-    #     # each batch should be x:bxM, y:bx1
-    #     batches.append((x_shuff[i:i+batch_size], y_shuff[i:i+batch_size]))
-    #     i += batch_size 
-
-
-    # ##########################
-    # ##### your code here #####
-    # ##########################
-    # print('batch', batches)
-    # return batches

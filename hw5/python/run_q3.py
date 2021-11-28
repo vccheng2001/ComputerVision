@@ -3,9 +3,16 @@ import scipy.io
 from nn import *
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
+import pickle
+import string
 
+
+# one hot to idx 
 def one_hot_to_idx(y):
     return np.argmax(y, axis=1)
+
+
+# plot weights of NN as a (32x32xN) image
 def plot_weights(W):
     print(f"**** PLOTTING WEIGHTS ****")
     fig = plt.figure(1, (4,4.))
@@ -20,6 +27,7 @@ def plot_weights(W):
     grid[0].imshow(W)  # The AxesGrid object work as a list of axes.
     plt.show()
 
+# load trian, valid data
 train_data = scipy.io.loadmat('../data/nist36_train.mat')
 valid_data = scipy.io.loadmat('../data/nist36_valid.mat')
 
@@ -28,22 +36,19 @@ valid_x, valid_y = valid_data['valid_data'], valid_data['valid_labels']
 
 print('train x', train_x.shape)
 print('train_y', train_y.shape)
-max_iters = 200
-# pick a batch size, learning rate
-batch_size = 32
+
+
+
+max_iters = 100
+batch_size = 64
 learning_rate = 1e-3
 hidden_size = 64
-##########################
-##### your code here #####
-##########################
 
-print("***** TRAINING *********")
-
+# train loader
 batches, _ = get_random_batches(train_x,train_y,batch_size)
 batch_num = len(batches)
 
-print("***** VALIDATION *********")
-
+# val loader 
 val_batches, _ = get_random_batches(valid_x,valid_y,batch_size)
 val_batch_num = len(val_batches)
 
@@ -51,10 +56,6 @@ val_batch_num = len(val_batches)
 
 params = {}
 
-# initialize layers here
-##########################
-##### your code here #####
-##########################
 # initialize a layer
 # N = 10800 examples
 # M = 1024 feature dim
@@ -68,11 +69,6 @@ print("PLOTTING INITIAL FIRST LAYER WEIGHTS")
 plot_weights(params['Wlayer1'])
 
 # # with default settings, you should get loss < 150 and accuracy > 80%
-# n = train_x.shape[0]
-# print('num total train examples: ', n)
-
-
-
 print("******STARTING TRAINING LOOP********\n\n")
 accs = []
 losses = []
@@ -81,19 +77,18 @@ avg_accs = []
 val_accs = []
 val_losses = []
 val_avg_accs = []
+
+
 # with default settings, you should get loss < 35 and accuracy > 75%
 for itr in range(max_iters):
-    print(f"******STARTING ITER {itr}***\n")
     total_loss = 0
     val_total_loss = 0
     accs = []
     val_accs = []
-    for xb,yb in batches:
-        # print(f'xb={xb},yb={yb}')
 
-        # forward
-        # print('xb', xb.shape) # (5,2)
-        # print('yb', yb.shape) # (5,4)
+    # Train
+    for xb,yb in batches:
+       
         h1 = forward(xb,params,name='layer1',activation=sigmoid)
         probs= forward(h1, params,name='output',activation=softmax)
 
@@ -132,16 +127,13 @@ for itr in range(max_iters):
     losses.append(total_loss)
 
 
-
+    # Validation
     for val_xb,val_yb in val_batches:
 
         val_h1 = forward(val_xb,params,name='layer1',activation=sigmoid)
         val_probs= forward(val_h1, params,name='output',activation=softmax)
 
-
-        # print('Probs', probs.shape)
         val_loss, val_acc = compute_loss_and_acc(val_yb, val_probs)
-        print(f'val_loss={val_loss},val_acc={val_acc}')
 
         val_total_loss += val_loss
         val_accs.append(val_acc)
@@ -151,17 +143,14 @@ for itr in range(max_iters):
     val_total_loss /= val_batch_num
     val_losses.append(val_total_loss)
     if itr % 1 == 0:
-        print("itr: {:02d} \t loss: {:.2f} \t acc : {:.2f}".format(itr,total_loss,avg_acc))
+        print("itr: {:02d} \t loss: {:.2f} \t acc : {:.2f} \t val_loss: {:.2f} \t val_acc : {:.2f}".format(itr,total_loss,avg_acc, val_total_loss, val_avg_acc))
 
 
 
 
 # run on validation set and report accuracy! should be above 75%
-
-
 print('FINAL VALID ACC', np.mean(val_avg_accs))
-
-# print losses 
+# print
 fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(5, 3))
 axes[0].plot(range(max_iters), losses, '-b', label="train_loss")
 axes[1].plot(range(max_iters), val_losses, '-r', label="val loss")
@@ -201,10 +190,8 @@ if True: # view the data
         import matplotlib.pyplot as plt
         plt.imshow(crop.reshape(32,32).T)
         # plt.show()
-import pickle
+
 saved_params = {k:v for k,v in params.items() if '_' not in k}
-
-
 save_file = f'../out/q3_weights_iters{max_iters}_bs{batch_size}_lr{learning_rate}_hs{hidden_size}.pickle'
 
 with open(save_file, 'wb') as handle:
@@ -222,6 +209,7 @@ test_params = weights
 test_accs = []
 test_losses = []
 confusion_matrix = np.zeros((test_y.shape[1],test_y.shape[1]))
+
 for test_xb,test_yb in test_batches:
     # print(f'xb={xb},yb={yb}')
 
@@ -252,8 +240,6 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
 # visualize weights here
-
-
 def squarify(M,val):
     (a,b)=M.shape
     if a>b:
@@ -268,8 +254,6 @@ plot_weights(weights['Wlayer1'])
 
 
 # Q3.4
-
-import string
 plt.imshow(confusion_matrix,interpolation='nearest')
 plt.grid(True)
 plt.xticks(np.arange(36),string.ascii_uppercase[:26] + ''.join([str(_) for _ in range(10)]))
