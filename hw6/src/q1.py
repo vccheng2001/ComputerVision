@@ -5,12 +5,16 @@
 # ##################################################################### #
 
 # Imports
+from contextlib import contextmanager
 import numpy as np
 from matplotlib import pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 from utils import integrateFrankot
 import scipy
 import scipy.io
 from PIL import Image
+import matplotlib.cm as cm
+
 
 def renderNDotLSphere(center, rad, light, pxSize, res):
 
@@ -44,9 +48,44 @@ def renderNDotLSphere(center, rad, light, pxSize, res):
     image : numpy.ndarray
         The rendered image of the hemispherical bowl
     """
+    cx, cy, cz = center
+    # sphere: sqrt(x^2 + y^2 + z^2) = c
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
 
-    ndotl = np.dot(n,light)
-    angle = np.arccos(ndotl)
+    u = np.linspace(0, 2 * np.pi, 10)
+    v = np.linspace(0, np.pi, 10)
+
+
+    # conversion into cartesian coords:
+    # x = r * cos(theta) * sin(phi)
+    # y = r * sin(theta) * sin(phi)
+    # z = r * cos(phi)
+
+    x = rad * np.outer(np.cos(u), np.sin(v))
+    y = rad * np.outer(np.sin(u), np.sin(v))
+    z = rad * np.outer(np.ones(np.size(u)), np.cos(v))
+    ax.plot_surface(x-cx, y-cy, z-cz, color='b')
+    plt.show()
+
+    print('x', x)
+
+    # normals 
+    nx = x.flatten() - cx
+    ny = y.flatten() - cy 
+    nz = z.flatten() - cz 
+
+    normals = np.vstack((nx,ny,nz))
+    normals /= np.linalg.norm(normals, axis=0)
+
+    print('normals', normals.shape) # 3 x N
+
+    # n-dot-l
+    ndotl = np.max(0, np.dot(normals.T,light))
+    # normalize
+    ndotl /= (np.linalg.norm(normals.T) * np.linalg.norm(light))
+    print('ndotl', ndotl.shape) # 100 x 1
+    # angle = np.arccos(ndotl)
     image = None
     return image
 
@@ -54,13 +93,18 @@ def renderNDotLSphere(center, rad, light, pxSize, res):
 ##################################################################
 #                       1b 
 ##################################################################
-# pxSize = 7e-6
-# res = np.array([3840,2160])
-# rad = 0.0075
-# center = np.array([0,0,10])
-# light1 = np.array([1,1,1]) / np.sqrt(3)
-# light2 = np.array([1,-1,1]) / np.sqrt(3)
-# light3 = np.array([-1,-1,1]) / np.sqrt(3)
+pxSize = 7e-6
+res = np.array([3840,2160])
+rad = 0.0075
+center = np.array([0,0,10])
+light1 = np.array([1,1,1]) / np.sqrt(3)
+light2 = np.array([1,-1,1]) / np.sqrt(3)
+light3 = np.array([-1,-1,1]) / np.sqrt(3)
+
+renderNDotLSphere(center, rad, light1, pxSize, res)
+exit(-1)
+renderNDotLSphere(center, rad, light2, pxSize, res)
+renderNDotLSphere(center, rad, light3, pxSize, res)
 
 
 
@@ -92,13 +136,13 @@ def loadData(path = "../data/"):
 
     """
 
-    im1 = np.array(Image.open(f'{path}input_1.tif')) 
+    im1 = np.array(Image.open(f'{path}input_1.tif'), dtype="uint16") 
     s = (im1.shape[0], im1.shape[1])
     I = im1.flatten()
 
     # stack remaining imgs
     for i in range(1,7):
-        im = np.array(Image.open(f'{path}input_{i+1}.tif'))
+        im = np.array(Image.open(f'{path}input_{i+1}.tif'), dtype="uint16")
         im = im.flatten()
         I = np.vstack((I,im))
 
@@ -106,6 +150,7 @@ def loadData(path = "../data/"):
     print('L', L.shape) # (3,7)
     print('I', I.shape) # (7, 477117)
     print('s', s)       # (431, 369)
+    print()
 
     return I, L, s
 
@@ -136,8 +181,16 @@ def estimatePseudonormalsCalibrated(I, L):
     Returns
     -------
     B : numpy.ndarray
-        The 3 x P matrix of pesudonormals
+        The 3 x P matrix of pseudonormals
     """
+
+    # B = # (3xP), set of pseudonormals in image
+    I = L.T @ B # rank of I = 3
+    U, S, VH = np.linalg.svd(I, full_matrices=False)
+    I_svd = VH[8,:]
+
+    # Divide by scale
+    I_svd = (I_svd / I_svd[-1]).reshape(3,3)
 
     B = None
     return B
