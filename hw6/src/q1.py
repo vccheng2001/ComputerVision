@@ -16,7 +16,7 @@ from PIL import Image
 import matplotlib.cm as cm
 
 
-def renderNDotLSphere(center, rad, light, pxSize, res):
+def renderNDotLSphere(center, rad, lights, pxSize, res):
 
     """
     Question 1 (b)
@@ -66,9 +66,8 @@ def renderNDotLSphere(center, rad, light, pxSize, res):
     y = rad * np.outer(np.sin(u), np.sin(v))
     z = rad * np.outer(np.ones(np.size(u)), np.cos(v))
     ax.plot_surface(x-cx, y-cy, z-cz, color='b')
-    plt.show()
 
-    print('x', x)
+    plt.show()
 
     # normals 
     nx = x.flatten() - cx
@@ -78,14 +77,39 @@ def renderNDotLSphere(center, rad, light, pxSize, res):
     normals = np.vstack((nx,ny,nz))
     normals /= np.linalg.norm(normals, axis=0)
 
-    print('normals', normals.shape) # 3 x N
+    print('normals', normals[:,1]) # 3 x N
 
-    # n-dot-l
-    ndotl = np.max(0, np.dot(normals.T,light))
-    # normalize
-    ndotl /= (np.linalg.norm(normals.T) * np.linalg.norm(light))
-    print('ndotl', ndotl.shape) # 100 x 1
-    # angle = np.arccos(ndotl)
+    ro = 1
+    # I: Nx1
+    # lights: Nx3
+    # n: 3x1 
+    S = lights # not invertible if linear combination 
+    # between light sources. So lights can't lie in same plane
+    I = np.max(0, S@(ro*normals))
+    
+    # kc/π = 1
+    # I = (ρ/π)kccos(theta)=ρcos(theta)
+    # I = ρs^T n
+    n_tilde = np.linalg.inv(S.T@S)@S.T@I
+    magnitude = np.linalg.norm(n_tilde) # magnitude
+    ro = magnitude # albedo
+
+    # NORMALS, surface normal is derivative of depth
+    n = n_tilde / magnitude
+
+    I = S @ (ro*normals)
+    print('ro', ro)
+    print('n', n[:,1])
+
+
+
+    # Depth from normals
+    # assume orthographic camera
+    # goal: estimate z at xy
+
+    # how to draw normal of surface?
+
+    
     image = None
     return image
 
@@ -97,15 +121,12 @@ pxSize = 7e-6
 res = np.array([3840,2160])
 rad = 0.0075
 center = np.array([0,0,10])
-light1 = np.array([1,1,1]) / np.sqrt(3)
-light2 = np.array([1,-1,1]) / np.sqrt(3)
-light3 = np.array([-1,-1,1]) / np.sqrt(3)
+l1 = np.array([1,1,1]) / np.sqrt(3)
+l2 = np.array([1,-1,1]) / np.sqrt(3)
+l3 = np.array([-1,-1,1]) / np.sqrt(3)
 
-renderNDotLSphere(center, rad, light1, pxSize, res)
-exit(-1)
-renderNDotLSphere(center, rad, light2, pxSize, res)
-renderNDotLSphere(center, rad, light3, pxSize, res)
-
+# lights = np.vstack([l1,l2,l3]) # 3x3
+# renderNDotLSphere(center, rad, lights, pxSize, res)
 
 
 
