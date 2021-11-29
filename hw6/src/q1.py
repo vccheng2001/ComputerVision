@@ -53,8 +53,8 @@ def renderNDotLSphere(center, rad, lights, pxSize, res):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
 
-    u = np.linspace(0, 2 * np.pi, 10)
-    v = np.linspace(0, np.pi, 10)
+    u = np.linspace(0, 2 * np.pi, 50)
+    v = np.linspace(0, np.pi, 50)
 
 
     # conversion into cartesian coords:
@@ -65,7 +65,7 @@ def renderNDotLSphere(center, rad, lights, pxSize, res):
     x = rad * np.outer(np.cos(u), np.sin(v))
     y = rad * np.outer(np.sin(u), np.sin(v))
     z = rad * np.outer(np.ones(np.size(u)), np.cos(v))
-    ax.plot_surface(x-cx, y-cy, z-cz, color='b')
+    ax.plot_surface(x-cx, y-cy, z-cz, cmap=cm.coolwarm)
 
     plt.show()
 
@@ -125,8 +125,8 @@ l1 = np.array([1,1,1]) / np.sqrt(3)
 l2 = np.array([1,-1,1]) / np.sqrt(3)
 l3 = np.array([-1,-1,1]) / np.sqrt(3)
 
-# lights = np.vstack([l1,l2,l3]) # 3x3
-# renderNDotLSphere(center, rad, lights, pxSize, res)
+lights = np.vstack([l1,l2,l3]) # 3x3
+renderNDotLSphere(center, rad, lights, pxSize, res)
 
 
 
@@ -238,8 +238,13 @@ def estimateAlbedosNormals(B):
         The 3 x P matrix of normals
     '''
 
-    albedos = None
-    normals = None
+    n_tilde = B 
+    magnitude = np.linalg.norm(n_tilde) # magnitude
+    albedos = magnitude # albedo
+
+    # NORMALS, surface normal is derivative of depth
+    normals = n_tilde / magnitude
+
     return albedos, normals
 
 
@@ -274,8 +279,19 @@ def displayAlbedosNormals(albedos, normals, s):
 
     """
 
-    albedoIm = None
-    normalIm = None
+    albedoIm = np.reshape(albedos, s)
+    normalIm = np.reshape(normals, (s,3))
+
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+
+    nx = normalIm[:,0]
+    ny = normalIm[:,1]
+    nz = normalIm[:,2]
+
+    surf = ax.scatter(nx,ny,nz, cmap=cm.rainbow,
+                           linewidth=0)
+    plt.show()
 
     return albedoIm, normalIm
 
@@ -302,6 +318,23 @@ def estimateShape(normals, s):
         The image, of size s, of estimated depths at each point
 
     """
+
+    # [N ] [V ] = 0 (nx3) by ()
+
+    # N dot V1 = 0
+    # N dot V2 = 0
+    # ....
+    # N dot VN = 0
+    _, P = normals.shape
+
+    for i in range(P): # loop through points
+        N = normals[:,i] # (3x1)
+        nx, ny, nz = N
+        V[i] = [1, 0, z[x+1,y] - zxy]
+
+
+
+    # estimate z values 
 
     surface = None
     return surface
