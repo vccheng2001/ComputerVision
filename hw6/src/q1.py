@@ -16,7 +16,7 @@ from PIL import Image
 import matplotlib.cm as cm
 import cv2
 
-def renderNDotLSphere(center, rad, light, pxSize, res):
+def renderNDotLSphere(center, rad, light, pxSize, res, plot):
 
     """
     Question 1 (b)
@@ -72,8 +72,10 @@ def renderNDotLSphere(center, rad, light, pxSize, res):
     ndotl[ndotl < 0] = 0
  
     ndotl = np.real(ndotl).T
-    plt.imshow(ndotl.astype('float64'), cmap="gray")
-    plt.show()
+
+    if plot:
+        plt.imshow(ndotl.astype('float64'), cmap="gray")
+        plt.show()
 
     return ndotl
 
@@ -92,9 +94,11 @@ l3 = np.array([-1,-1,1]) / np.sqrt(3)
 
 print('*************** q1a *********************')
 
-renderNDotLSphere(center, rad, l1, pxSize, res)
-renderNDotLSphere(center, rad, l2, pxSize, res)
-renderNDotLSphere(center, rad, l3, pxSize, res)
+plot = False 
+
+renderNDotLSphere(center, rad, l1, pxSize, res, plot)
+renderNDotLSphere(center, rad, l2, pxSize, res, plot)
+renderNDotLSphere(center, rad, l3, pxSize, res, plot)
 
 
 def loadData(path = "../data/"):
@@ -149,7 +153,7 @@ def loadData(path = "../data/"):
 print('*************** q1c *********************')
 I, L, s = loadData()
 
-print('********** q1d: Estimate pseudonormals ***********')
+print('*********  SVD  ***********')
 
 U, S, VH = np.linalg.svd(I, full_matrices=False)
 print('Singular values', S) 
@@ -177,6 +181,28 @@ def estimatePseudonormalsCalibrated(I, L):
         The 3 x P matrix of pseudonormals
     """
 
+    # I = Lb
+    # minimize: (I-Lb), solve Lb=I
+    # L: M,N
+    # I: M, or M, K
+
+    # Numpy linalg.lstsq(a, b, rcond='warn') returns 
+    # solution to vector x that satisfies a@x=b
+
+
+    _, P = I.shape # 
+
+    # I:  N= 7 x NumPixels 
+    L =  L.T # N=7 x 3
+
+
+    x, residuals, rank, s = np.linalg.lstsq(L,I,rcond=None)
+    return x
+
+
+
+print('********** q1d: Estimate Pseudonormals Calibrated ****************')
+B = estimatePseudonormalsCalibrated(I, L)
     
 
 
@@ -207,9 +233,13 @@ def estimateAlbedosNormals(B):
 
     # NORMALS, surface normal is derivative of depth
     normals = n_tilde / magnitude
+    print('albedos', albedos)       # scalar 
+    print('normals', normals.shape) # 3 x NumPixels
 
     return albedos, normals
 
+print('********** q1e: Estimate Albedos Normals **********')
+albedos, normals = estimateAlbedosNormals(B)
 
 def displayAlbedosNormals(albedos, normals, s):
 
