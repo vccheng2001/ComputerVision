@@ -15,6 +15,7 @@ import scipy.io
 from PIL import Image
 import matplotlib.cm as cm
 import cv2
+import skimage
 
 def renderNDotLSphere(center, rad, light, pxSize, res, plot):
 
@@ -128,15 +129,24 @@ def loadData(path = "../data/"):
 
     """
 
-    im1 = np.array(Image.open(f'{path}input_1.tif'), dtype="uint16") 
-    s = (im1.shape[0], im1.shape[1])
-    I = im1.flatten()
+    im1 = cv2.imread(f'{path}input_1.tif', cv2.IMREAD_UNCHANGED)
+    im1 = cv2.cvtColor(im1, cv2.COLOR_RGB2XYZ)
+
+
+    lum = im1[:,:,1] # extract luminance Y from XYZ
+    s = lum.shape
+
+    I = lum.flatten()
+
+    
 
     # stack remaining imgs
     for i in range(1,7):
-        im = np.array(Image.open(f'{path}input_{i+1}.tif'), dtype="uint16")
-        im = im.flatten()
-        I = np.vstack((I,im))
+        im = cv2.imread(f'{path}input_{i+1}.tif', cv2.IMREAD_UNCHANGED)
+        im = cv2.cvtColor(im, cv2.COLOR_RGB2XYZ)
+        lum = im1[:,:,1] # Y
+        lum = lum.flatten()
+        I = np.vstack((I,lum))
 
     L = np.load(f'{path}/sources.npy').T # (3x7)
     print('L', L.shape) # (3,7)
@@ -189,10 +199,14 @@ def estimatePseudonormalsCalibrated(I, L):
     # Numpy linalg.lstsq(a, b, rcond='warn') returns 
     # solution to vector x that satisfies a@x=b
 
+    # Ax = b
+    # L^Tb = I
+    # L^T: 7p*3p, b: flatten to 3p, I: flatten to 7p
 
     _, P = I.shape # 
 
-    # I:  N= 7 x NumPixels 
+    # I:  N= 7*NumPixels 
+    # I = I.reshape(I, 7*P) 
     L =  L.T # N=7 x 3
 
 
@@ -227,19 +241,29 @@ def estimateAlbedosNormals(B):
         The 3 x P matrix of normals
     '''
 
-    n_tilde = B 
-    magnitude = np.linalg.norm(n_tilde) # magnitude
-    albedos = magnitude # albedo
+    _, P = B.shape
+    n_tilde = B # 3x1 col vec PER PIXEL 
+  
+    albedos = np.empty(P)
+    normals = np.empty((3,P))
 
-    # NORMALS, surface normal is derivative of depth
-    normals = n_tilde / magnitude
-    print('albedos', albedos)       # scalar 
-    print('normals', normals.shape) # 3 x NumPixels
+    # albedo_i = mag(n_tilde_i)
+    # normal_i = n_tilde_i / albedo_i
+    for i in range(P):
+        magnitude = np.linalg.norm(n_tilde[:,i]) # magnitude
+        albedo = magnitude # albedo
+        normal = n_tilde[:,i] / magnitude
+
+        albedos[i] = albedo
+        normals[:, i] = normal
+
 
     return albedos, normals
 
 print('********** q1e: Estimate Albedos Normals **********')
 albedos, normals = estimateAlbedosNormals(B)
+# (P), (3 x P)
+print(albedos.shape, normals.shape, 'aaaa')
 
 def displayAlbedosNormals(albedos, normals, s):
 
@@ -271,9 +295,14 @@ def displayAlbedosNormals(albedos, normals, s):
         Normals reshaped as an s x 3 image
 
     """
+    w, h = s
 
-    albedoIm = np.reshape(albedos, s)
-    normalIm = np.reshape(normals, (s,3))
+
+    # reshape albedos into image shape
+    albedoIm = np.reshape(albedos, (w,h))
+    # print(albedoIm[0,0],albedoIm[0,1],albedoIm[0,2])
+
+    normalIm = np.reshape(normals, (w,h,3))
 
     fig = plt.figure()
     ax = fig.gca(projection='3d')
@@ -282,11 +311,21 @@ def displayAlbedosNormals(albedos, normals, s):
     ny = normalIm[:,1]
     nz = normalIm[:,2]
 
-    surf = ax.scatter(nx,ny,nz, cmap=cm.rainbow,
+    ax.scatter(nx,ny,nz, cmap=cm.rainbow,
                            linewidth=0)
     plt.show()
 
+
+    # albedo
+    fig = plt.figure()
+    plt.imshow(albedoIm, cmap=cm.rainbow)
+
+    plt.show()
+
     return albedoIm, normalIm
+
+print('********** q1f: Estimate Albedos Normals **********')
+albedoIm, normalIm = displayAlbedosNormals(albedos, normals, s)
 
 
 def estimateShape(normals, s):
