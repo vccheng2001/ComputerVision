@@ -82,26 +82,6 @@ def renderNDotLSphere(center, rad, light, pxSize, res, plot):
 
 
 
-##################################################################
-#                       1b 
-##################################################################
-pxSize = 7e-6
-res = np.array([3840,2160])
-rad = 0.0075
-center = np.array([0,0,10])
-l1 = np.array([1,1,1]) / np.sqrt(3)
-l2 = np.array([1,-1,1]) / np.sqrt(3)
-l3 = np.array([-1,-1,1]) / np.sqrt(3)
-
-print('*************** q1a *********************')
-
-plot = False 
-
-renderNDotLSphere(center, rad, l1, pxSize, res, plot)
-renderNDotLSphere(center, rad, l2, pxSize, res, plot)
-renderNDotLSphere(center, rad, l3, pxSize, res, plot)
-
-
 def loadData(path = "../data/"):
 
     """
@@ -157,18 +137,6 @@ def loadData(path = "../data/"):
 
 
 
-##################################################################
-#                       1c
-##################################################################
-print('*************** q1c *********************')
-I, L, s = loadData()
-
-print('*********  SVD  ***********')
-
-U, S, VH = np.linalg.svd(I, full_matrices=False)
-print('Singular values', S) 
-
-
 def estimatePseudonormalsCalibrated(I, L):
 
     """
@@ -215,10 +183,6 @@ def estimatePseudonormalsCalibrated(I, L):
 
 
 
-print('********** q1d: Estimate Pseudonormals Calibrated ****************')
-B = estimatePseudonormalsCalibrated(I, L)
-    
-
 
 def estimateAlbedosNormals(B):
 
@@ -260,10 +224,6 @@ def estimateAlbedosNormals(B):
 
     return albedos, normals
 
-print('********** q1e: Estimate Albedos Normals **********')
-albedos, normals = estimateAlbedosNormals(B)
-# (P), (3 x P)
-print(albedos.shape, normals.shape, 'aaaa')
 
 def displayAlbedosNormals(albedos, normals, s):
 
@@ -321,8 +281,6 @@ def displayAlbedosNormals(albedos, normals, s):
 
     return albedoIm, normalIm
 
-print('********** q1f: Estimate Albedos Normals **********')
-albedoIm, normalIm = displayAlbedosNormals(albedos, normals, s)
 
 
 def estimateShape(normals, s):
@@ -376,9 +334,7 @@ def estimateShape(normals, s):
     surface = np.reshape(z, s)
     return surface
 
-print('********** q1g: Normal integration **********')
-surface = estimateShape(normals, s)
-print('surface', surface.shape)
+
 
 def plotSurface(surface):
 
@@ -404,9 +360,53 @@ def plotSurface(surface):
     ax.plot_surface(xx, yy, surface, cmap=cm.coolwarm)
     plt.show()
 
-plotSurface(surface)
 
 if __name__ == '__main__':
 
-    # Put your main code here
-    pass
+    ##################################################################
+    #                       1b 
+    ##################################################################
+    pxSize = 7e-6
+    res = np.array([3840,2160])
+    rad = 0.0075
+    center = np.array([0,0,10])
+    l1 = np.array([1,1,1]) / np.sqrt(3)
+    l2 = np.array([1,-1,1]) / np.sqrt(3)
+    l3 = np.array([-1,-1,1]) / np.sqrt(3)
+
+    print('*************** q1a *********************')
+
+    plot = False 
+
+    renderNDotLSphere(center, rad, l1, pxSize, res, plot)
+    renderNDotLSphere(center, rad, l2, pxSize, res, plot)
+    renderNDotLSphere(center, rad, l3, pxSize, res, plot)
+
+
+    print('*************** q1c *********************')
+    I, L, s = loadData()
+
+    print('*********  SVD  ***********')
+
+    U, S, VH = np.linalg.svd(I, full_matrices=False)
+    print('Singular values', S) 
+
+
+    print('********** q1d: Estimate Pseudonormals Calibrated ****************')
+    B = estimatePseudonormalsCalibrated(I, L)
+        
+
+    print('********** q1e: Estimate Albedos Normals **********')
+    albedos, normals = estimateAlbedosNormals(B)
+    # (P), (3 x P)
+    print(albedos.shape, normals.shape, 'aaaa')
+
+
+    print('********** q1f: Estimate Albedos Normals **********')
+    albedoIm, normalIm = displayAlbedosNormals(albedos, normals, s)
+
+    print('********** q1g: Normal integration **********')
+    surface = estimateShape(normals, s)
+    print('surface', surface.shape)
+    plotSurface(surface)
+
