@@ -147,7 +147,12 @@ def loadData(path = "../data/"):
 #                       1c
 ##################################################################
 print('*************** q1c *********************')
-loadData()
+I, L, s = loadData()
+
+print('********** q1d: Estimate pseudonormals ***********')
+
+U, S, VH = np.linalg.svd(I, full_matrices=False)
+print('Singular values', S) 
 
 
 def estimatePseudonormalsCalibrated(I, L):
@@ -172,16 +177,7 @@ def estimatePseudonormalsCalibrated(I, L):
         The 3 x P matrix of pseudonormals
     """
 
-    # B = # (3xP), set of pseudonormals in image
-    I = L.T @ B # rank of I = 3
-    U, S, VH = np.linalg.svd(I, full_matrices=False)
-    I_svd = VH[8,:]
-
-    # Divide by scale
-    I_svd = (I_svd / I_svd[-1]).reshape(3,3)
-
-    B = None
-    return B
+    
 
 
 def estimateAlbedosNormals(B):
