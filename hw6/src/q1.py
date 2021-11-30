@@ -49,23 +49,25 @@ def renderNDotLSphere(center, rad, light, pxSize, res):
         The rendered image of the hemispherical bowl
     """
 
-    
+    # resolution
     r = np.arange(0, res[1], 1)
     c = np.arange(0, res[0], 1)
 
     y, x= np.meshgrid(r,c)
-    print('y', y.shape, 'x', x.shape)
 
+    # translate image origin to actual origin (offset by res/2)
     x_3d = (x-res[0]/2)*pxSize
     y_3d = (y-res[1]/2)*pxSize
+    # sphere equation to solve for z
     z_3d = np.sqrt(rad**2 + 0j - x_3d**2 - y_3d**2)
+
     x_3d[np.real(z_3d) == 0] = 0
     y_3d[np.real(z_3d) == 0] = 0
     z_3d[np.real(z_3d) == 0] = 0
     n = np.array([x_3d, y_3d ,z_3d])
-    # (1x3) by (3x1) = 1x1
-    # print('n', n.shape, 'light', light.shape)
+
     n = np.transpose(n, (1,2,0))
+    # (3840, 2160, 3) x (3,1) = (3840, 2160)
     ndotl = np.dot(n, light)
     ndotl[ndotl < 0] = 0
  
@@ -75,71 +77,6 @@ def renderNDotLSphere(center, rad, light, pxSize, res):
 
     return ndotl
 
-            # point on sphere: [x,y,z]
-
-
-    # # sphere: sqrt(x^2 + y^2 + z^2) = c
-    # fig = plt.figure()
-    # ax = fig.add_subplot(111, projection='3d')
-
-    # u = np.linspace(0, 2 * np.pi, 50)
-    # v = np.linspace(0, np.pi, 50)
-
-
-    # # conversion into cartesian coords:
-    # # x = r * cos(theta) * sin(phi)
-    # # y = r * sin(theta) * sin(phi)
-    # # z = r * cos(phi)
-
-    # x = rad * np.outer(np.cos(u), np.sin(v))
-    # y = rad * np.outer(np.sin(u), np.sin(v))
-    # z = rad * np.outer(np.ones(np.size(u)), np.cos(v))
-    # ax.plot_surface(x-cx, y-cy, z-cz, cmap=cm.coolwarm)
-
-    # plt.show()
-
-    # # normals 
-    # nx = x.flatten() - cx
-    # ny = y.flatten() - cy 
-    # nz = z.flatten() - cz 
-
-    # normals = np.vstack((nx,ny,nz))
-    # normals /= np.linalg.norm(normals, axis=0)
-
-    # print('normals', normals[:,1]) # 3 x N
-
-    # ro = 1
-    # # I: Nx1
-    # # lights: Nx3
-    # # n: 3x1 
-    # S = lights # not invertible if linear combination 
-    # # between light sources. So lights can't lie in same plane
-    # I = np.max(0, S@(ro*normals))
-    
-    # # kc/π = 1
-    # # I = (ρ/π)kccos(theta)=ρcos(theta)
-    # # I = ρs^T n
-    # n_tilde = np.linalg.inv(S.T@S)@S.T@I
-    # magnitude = np.linalg.norm(n_tilde) # magnitude
-    # ro = magnitude # albedo
-
-    # # NORMALS, surface normal is derivative of depth
-    # n = n_tilde / magnitude
-
-    # I = S @ (ro*normals)
-    # print('ro', ro)
-    # print('n', n[:,1])
-
-
-    # # Depth from normals
-    # # assume orthographic camera
-    # # goal: estimate z at xy
-
-    # # how to draw normal of surface?
-
-    
-    # image = None
-    # return image
 
 
 ##################################################################
@@ -153,8 +90,11 @@ l1 = np.array([1,1,1]) / np.sqrt(3)
 l2 = np.array([1,-1,1]) / np.sqrt(3)
 l3 = np.array([-1,-1,1]) / np.sqrt(3)
 
-# lights = np.vstack([l1,l2,l3]) # 3x3
+print('*************** q1a *********************')
+
 renderNDotLSphere(center, rad, l1, pxSize, res)
+renderNDotLSphere(center, rad, l2, pxSize, res)
+renderNDotLSphere(center, rad, l3, pxSize, res)
 
 
 def loadData(path = "../data/"):
@@ -198,7 +138,6 @@ def loadData(path = "../data/"):
     print('L', L.shape) # (3,7)
     print('I', I.shape) # (7, 477117)
     print('s', s)       # (431, 369)
-    print()
 
     return I, L, s
 
@@ -207,6 +146,7 @@ def loadData(path = "../data/"):
 ##################################################################
 #                       1c
 ##################################################################
+print('*************** q1c *********************')
 loadData()
 
 
