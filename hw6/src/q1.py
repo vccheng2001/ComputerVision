@@ -9,7 +9,7 @@ from contextlib import contextmanager
 import numpy as np
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from utils import integrateFrankot
+import utils
 import scipy
 import scipy.io
 from PIL import Image
@@ -302,24 +302,21 @@ def displayAlbedosNormals(albedos, normals, s):
     albedoIm = np.reshape(albedos, (w,h))
     # print(albedoIm[0,0],albedoIm[0,1],albedoIm[0,2])
 
-    normalIm = np.reshape(normals, (w,h,3))
+    normalIm = np.reshape(normals, (w,h,3)).astype(np.uint8)
 
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
 
-    nx = normalIm[:,0]
-    ny = normalIm[:,1]
-    nz = normalIm[:,2]
-
-    ax.scatter(nx,ny,nz, cmap=cm.rainbow,
-                           linewidth=0)
-    plt.show()
+    # nx = normals[0,:]
+    # ny = normals[1,:]
+    # nz = normals[2,:]
+    # fig = plt.figure()
+    # ax = fig.gca(projection='3d')
+    # plt.quiver(nx,ny,nz,length=10)
+    # plt.show()
 
 
     # albedo
     fig = plt.figure()
-    plt.imshow(albedoIm, cmap=cm.rainbow)
-
+    plt.imshow(albedoIm, cmap=cm.gray)
     plt.show()
 
     return albedoIm, normalIm
@@ -351,26 +348,37 @@ def estimateShape(normals, s):
 
     """
 
-    # [N ] [V ] = 0 (nx3) by ()
+    
+    # enforce integrability to normals 
+    normals = utils.enforceIntegrability(normals, s, sig = 3)
+    # zx: image of derivatives of depth along x image dimension
 
-    # N dot V1 = 0
-    # N dot V2 = 0
-    # ....
-    # N dot VN = 0
     _, P = normals.shape
 
-    for i in range(P): # loop through points
-        N = normals[:,i] # (3x1)
-        nx, ny, nz = N
-        V[i] = [1, 0, z[x+1,y] - zxy]
+    # for each pixel (x,y), normals is (n1, n2, n3)
+    # df/dx = f_x = -n1/n3
+    # df/dy = f_y = -n2/n3
 
+    Z = np.zeros(P)
+    f_xs = []
+    f_ys = []
+    for i in range(P):
+        n1, n2, n3 = normals[:,i]
+        f_x = -n1 / n3
+        f_y = -n2 / n3
+        f_xs.append(f_x)
+        f_ys.append(f_y)
+    
 
-
-    # estimate z values 
-
-    surface = None
+    f_xs = np.reshape(np.array(f_xs), s)
+    f_ys = np.reshape(np.array(f_ys), s)
+    z = utils.integrateFrankot(f_xs, f_ys, pad = 512)
+    surface = np.reshape(z, s)
     return surface
 
+print('********** q1g: Normal integration **********')
+surface = estimateShape(normals, s)
+print('surface', surface.shape)
 
 def plotSurface(surface):
 
@@ -390,8 +398,13 @@ def plotSurface(surface):
 
     """
 
-    pass
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    xx, yy = np.mgrid[0:431, 0:369]
+    ax.plot_surface(xx, yy, surface, cmap=cm.coolwarm)
+    plt.show()
 
+plotSurface(surface)
 
 if __name__ == '__main__':
 
