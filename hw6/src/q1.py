@@ -19,6 +19,11 @@ import skimage
 from scipy import sparse
 import scipy.sparse.linalg
 
+import skimage
+import skimage.color
+from skimage.color import rgb2xyz
+
+
 
 def renderNDotLSphere(center, rad, light, pxSize, res, plot):
 
@@ -113,23 +118,49 @@ def loadData(path = "../data/"):
     """
 
     im1 = cv2.imread(f'{path}input_1.tif', cv2.IMREAD_UNCHANGED)
-    im1 = cv2.cvtColor(im1, cv2.COLOR_RGB2XYZ)
+    im1 = cv2.cvtColor(im1, cv2.COLOR_BGR2RGB)
 
+    assert(im1.dtype == np.uint16)
 
+    im1 = skimage.color.rgb2xyz(im1)
+    # im1 = np.uint16(im1)
+    # assert(im1.dtype == np.uint16)
+    # im1 = cv2.cvtColor(im1, cv2.COLOR_RGB2XYZ)
     lum = im1[:,:,1] # extract luminance Y from XYZ
+
     s = lum.shape
+    
+    lum = lum.flatten()
+    # lum = lum / np.max(lum)
 
-    I = lum.flatten()
-
+    I = lum
     
     # W(431)*H(369) = 159039 PIXELS * 3 CHANNELS = 477117
     # stack remaining imgs
     for i in range(1,7):
         im = cv2.imread(f'{path}input_{i+1}.tif', cv2.IMREAD_UNCHANGED)
-        im = cv2.cvtColor(im, cv2.COLOR_RGB2XYZ)
+        im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+
+        assert(im.dtype == np.uint16)
+
+        im = skimage.color.rgb2xyz(im)
+        print('immmmm', im)
+        # im = np.uint16(im)
+
+
+        # cv2.imshow(str(i), im)
+        # cv2.waitKey(0)
         lum = im1[:,:,1] # Y
         lum = lum.flatten()
+        # lum = lum / np.max(lum)
         I = np.vstack((I,lum))
+
+    # relative luminance
+    # print('I norm lum', I)
+    # print('I type before cast', I.dtype) # float64
+    # I = I.astype(np.uint16)
+    I = I / np.max(I)
+    # print(I, 'I after cast', I.dtype)
 
     L = np.load(f'{path}/sources.npy').T # (3x7)
     print('L', L.shape) # (3,7)
@@ -161,8 +192,20 @@ def estimatePseudonormalsCalibrated(I, L):
     B : numpy.ndarray
         The 3 x P matrix of pseudonormals
     """
+    # m < n: AA^T invertible 
 
-    # b = np.linalg.inv(L@L.T)@L@I
+    # L_inv = np.linalg.inv(L.T @ L) @ L.T # 263, 308, 294
+
+
+    # ****
+    L_inv = L.T @ np.linalg.inv(L @ L.T) # 490, 574, 547
+    print(L_inv.shape, I.shape)
+    rett = L_inv.T @ I 
+
+
+
+
+    # b = np.linalg.inv(L.T@L)@L@I
 
     # I = Lb
     # minimize: (I-Lb), solve Lb=I
@@ -215,7 +258,7 @@ def estimatePseudonormalsCalibrated(I, L):
     print(n_tilde.shape, 'ntildeeee')
     
     
-    return n_tilde
+    return rett
 
 
 
@@ -246,6 +289,8 @@ def estimateAlbedosNormals(B):
     h = 369
     n_tilde = B
 
+    # method 1 
+    #**********
     n_tilde = np.reshape(n_tilde, (3, w, h))
 
     albedos = []
@@ -255,18 +300,26 @@ def estimateAlbedosNormals(B):
         for v in range(h):
             magnitude = np.linalg.norm(n_tilde[:, u,v])
             albedos.append(magnitude)
-            normals[:, u,v] = n_tilde[:, u,v] / magnitude
+            try:
+                normals[:, u,v] = n_tilde[:, u,v] / magnitude
+            except Exception as e: 
+                print(e)
+                print('err magnitude', magnitude)
 
     normals = np.reshape(normals, (3, P))
+
+    print('max albedo', np.max(albedos))
+   
     
     return np.array(albedos), normals 
     # n_tilde = B # 3x1 col vec PER PIXEL 
   
     
 
-
-    # for i in range(w)
-
+    # method 2 (same)
+    #**********
+    # albedos = np.empty(P)
+    # normals = np.empty((3,P))
 
     # # albedo_i = mag(n_tilde_i)
     # # normal_i = n_tilde_i / albedo_i
@@ -316,6 +369,7 @@ def displayAlbedosNormals(albedos, normals, s):
 
     # reshape albedos into image shape
     albedoIm = np.reshape(albedos, (w,h))
+    print(albedoIm[0,0],albedoIm[0,1],albedoIm[0,2])
 
     normalIm = np.reshape(normals, (w,h,3)).astype(np.uint8)
 
@@ -377,8 +431,8 @@ def estimateShape(normals, s):
     f_ys = []
     for i in range(P):
         n1, n2, n3 = normals[:,i]
-        f_x = -n1 / n3
-        f_y = -n2 / n3
+        f_x = n1 / n3
+        f_y = n2 / n3
         f_xs.append(f_x)
         f_ys.append(f_y)
     
@@ -432,7 +486,7 @@ if __name__ == '__main__':
 
     print('*************** q1a *********************')
 
-    plot = False 
+    plot =  False
 
     renderNDotLSphere(center, rad, l1, pxSize, res, plot)
     renderNDotLSphere(center, rad, l2, pxSize, res, plot)
