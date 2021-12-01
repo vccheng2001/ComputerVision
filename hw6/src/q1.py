@@ -117,16 +117,17 @@ def loadData(path = "../data/"):
 
     """
 
-    im1 = cv2.imread(f'{path}input_1.tif', cv2.IMREAD_UNCHANGED)
-    im1 = cv2.cvtColor(im1, cv2.COLOR_BGR2RGB)
+    im = cv2.imread(f'{path}input_1.tif', cv2.IMREAD_UNCHANGED)
+    # im1 = cv2.cvtColor(im1, cv2.COLOR_BGR2RGB)
 
-    assert(im1.dtype == np.uint16)
+    assert(im.dtype == np.uint16)
 
-    im1 = skimage.color.rgb2xyz(im1)
+    im = skimage.color.rgb2xyz(im)
+
     # im1 = np.uint16(im1)
     # assert(im1.dtype == np.uint16)
     # im1 = cv2.cvtColor(im1, cv2.COLOR_RGB2XYZ)
-    lum = im1[:,:,1] # extract luminance Y from XYZ
+    lum = im[:,:,1] # extract luminance Y from XYZ
 
     s = lum.shape
     
@@ -144,13 +145,12 @@ def loadData(path = "../data/"):
         assert(im.dtype == np.uint16)
 
         im = skimage.color.rgb2xyz(im)
-        print('immmmm', im)
         # im = np.uint16(im)
 
 
         # cv2.imshow(str(i), im)
         # cv2.waitKey(0)
-        lum = im1[:,:,1] # Y
+        lum = im[:,:,1] # Y
         lum = lum.flatten()
         # lum = lum / np.max(lum)
         I = np.vstack((I,lum))
