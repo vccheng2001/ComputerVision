@@ -126,48 +126,28 @@ def loadData(path = "../data/"):
 
     """
 
+    # first image 
     im = cv2.imread(f'{path}input_1.tif', cv2.IMREAD_UNCHANGED)
-    # im1 = cv2.cvtColor(im1, cv2.COLOR_BGR2RGB)
-
     assert(im.dtype == np.uint16)
-
+    # extract luminance, flatten into vector
     lum = skimage.color.rgb2gray(im)
-    
-    # im1 = np.uint16(im1)
-    # assert(im1.dtype == np.uint16)
-    # im1 = cv2.cvtColor(im1, cv2.COLOR_RGB2XYZ)
-    # lum = im[:,:,1] # extract luminance Y from XYZ
-
     s = lum.shape
-    
     lum = lum.flatten()
 
     I = lum
     
     # W(431)*H(369) = 159039 PIXELS * 3 CHANNELS = 477117
-    # stack remaining imgs
+    # stack remaining images 
     for i in range(1,7):
         im = cv2.imread(f'{path}input_{i+1}.tif', cv2.IMREAD_UNCHANGED)
         im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
-
         assert(im.dtype == np.uint16)
-
         lum = skimage.color.rgb2gray(im)
-        # im = np.uint16(im)
-
-
-        # cv2.imshow(str(i), im)
-        # cv2.waitKey(0)
-        # lum = im[:,:,1] # Y
         lum = lum.flatten()
         I = np.vstack((I,lum))
 
-    # relative luminance
-    # print('I norm lum', I)
-    # print('I type before cast', I.dtype) # float64
-    # I = I.astype(np.uint16)
+    # divide by max to get relative luminance (range 0->1)
     I = I / np.max(I)
-    # print(I, 'I after cast', I.dtype)
 
     L = np.load(f'{path}/sources.npy').T # (3x7)
     print('L', L.shape) # (3,7)
@@ -199,72 +179,33 @@ def estimatePseudonormalsCalibrated(I, L):
     B : numpy.ndarray
         The 3 x P matrix of pseudonormals
     """
-    # m < n: AA^T invertible 
-
-    # L_inv = np.linalg.inv(L.T @ L) @ L.T # 263, 308, 294
-
-
-    # ****
-    L_inv = L.T @ np.linalg.inv(L @ L.T) # 490, 574, 547
-    print(L_inv.shape, I.shape)
-    rett = L_inv.T @ I 
-
-
-
-
-    # b = np.linalg.inv(L.T@L)@L@I
-
-    # I = Lb
-    # minimize: (I-Lb), solve Lb=I
-    # L: M,N
-    # I: M, or M, K
-
-    # Numpy linalg.lstsq(a, b, rcond='warn') returns 
-    # solution to vector x that satisfies a@x=b
-
-    # Ax = b
-    # L^Tb = I
-    # L^T: 7p*3p, b: flatten to 3p, I: flatten to 7p
-    import copy
-    L_orig = copy.deepcopy(L)
-    I_orig = copy.deepcopy(I)
-    _, P = I.shape # 
-
-    # I:  N= 7*NumPixels 
-    # I = I.reshape(I, 7*P) 
-    # (3x7)@(PxP) = 
-    identity = scipy.sparse.eye(P)
     
+    # METHOD 1: CLOSED FORM 
 
-    # a: 7x3
-    # b: p*p
-    # M=7, N=3, P=p, Q=p
-    # out: 7p, 3p 
+    L_inv = L.T @ np.linalg.inv(L @ L.T) # 490, 574, 547
+    b1 = L_inv.T @ I 
 
+
+    # METHOD 2: LEAST SQUARES
+
+    _, P = I.shape 
+    identity = scipy.sparse.eye(P)
+
+    # multiply by identity matrix PxP
     L = sparse.kron(L,identity).T
     I = np.reshape(I, (7*P))
     I = sparse.csr_matrix(I).T
     
-
     # L: M=7p, N=3p
     # I: M=7p
     # B: N=3p
 
-    # (1113273, 477117)
-    print(f'L should be {7*P} by {3*P}', L.shape) # M x N, M=7p, N=3p
-    # (1113273, 1)
-    print(f'I should be {7*P}', I.shape) # M=7p
-    
-
+    # solve least squares using sparse matrix 
     ret = sparse.linalg.lsqr(L, I.toarray())
-    b = ret[0]
-    b = np.reshape(b, (3, -1))
-    print(f'b should be 3 x {P}', b.shape) # (3*159039)
+    b2 = ret[0]
+    b2 = np.reshape(b2, (3, -1))
 
-    n_tilde = np.linalg.pinv(L_orig.T) @ I_orig
-    
-    
-    return rett
+    return b2
 
 
 
@@ -302,21 +243,17 @@ def estimateAlbedosNormals(B):
     albedos = []
     normals = np.empty((3, w,h,))
 
-
-
-    # r = normalize(np.array([1,2,3]))
-    # print(np.linalg.norm(r))
-    # exit(-1)
     for u in range(w):
-        
         for v in range(h):
-
+            # for each pixel, normalize to unit length
             norm, unit_vec = normalize(n_tilde[:, u,v])
-
-
+            # albedos: magnitude 
             albedos.append(norm)
+
+            # ranges [-1,1]
             normals[:,u,v] = unit_vec
 
+    # convert from [-1,1] to [0,1] range
     normals_scaled = ((normals + 1)/2)
     normals_scaled = np.reshape(normals_scaled, (3, P))
     albedos = np.array(albedos)
@@ -324,33 +261,8 @@ def estimateAlbedosNormals(B):
     # scale to between 0,1
     albedos = scale_zero_to_one(albedos)
     
-    print('max min albedos', np.max(albedos), np.min(albedos))
-    print('max min normals', np.max(normals), np.min(normals))
-
-
-    # scale to between -1,1
-    # normals = 2*scale_zero_to_one(normals)-1
     return albedos, normals_scaled, normals
-    # n_tilde = B # 3x1 col vec PER PIXEL 
   
-    
-
-    # method 2 (same)
-    #**********
-    # albedos = np.empty(P)
-    # normals = np.empty((3,P))
-
-    # # albedo_i = mag(n_tilde_i)
-    # # normal_i = n_tilde_i / albedo_i
-    # for i in range(P):
-    #     magnitude = np.linalg.norm(n_tilde[:,i]) # magnitude
-    #     albedo = magnitude # albedo
-    #     normal = n_tilde[:,i] / magnitude
-    #     albedos[i] = albedo # vector of length <pixels>
-    #     normals[:, i] = normal # s x 3
-
-    # # (num_pixels), (3 x num_pixels)
-    # return albedos, normals
 
 
 def displayAlbedosNormals(albedos, normals, s):
@@ -385,25 +297,20 @@ def displayAlbedosNormals(albedos, normals, s):
     """
     w, h = s
 
-    # scale normals from [-1,1] range to [0,1] range
 
-    # normals = ((normals + 1)/2)#*255
-
-    print('normals should be [0,1]', np.max(normals), np.min(normals) )
 
     # reshape albedos into image shape
     albedoIm = np.reshape(albedos, (w,h))
-    print(albedoIm[0,0],albedoIm[0,1],albedoIm[0,2])
-    normalIm = np.reshape(normals, (w,h,3))#.astype(np.uint8)
+    normalIm = np.reshape(normals, (w,h,3))
 
-    fig = plt.figure()
-    plt.imshow(normalIm, cmap=cm.rainbow)
-    plt.show()
-
-
-    # albedo
+    # plot albedo
     fig = plt.figure()
     plt.imshow(albedoIm, cmap=cm.gray)
+    plt.show()
+
+    # plot normals
+    fig = plt.figure()
+    plt.imshow(normalIm, cmap=cm.rainbow)
     plt.show()
 
     return albedoIm, normalIm
@@ -443,27 +350,26 @@ def estimateShape(normals, s):
     f_xs = np.empty((w,h))
     f_ys = np.empty((w,h))
 
+    # loop through each pixel
     for u in range(w):
-        
-        for v in range(h):
 
+        for v in range(h):
+            # calculate normals (should be unit vector)
             n1,n2,n3 = normals[:,u,v] 
             assert(np.isclose(np.linalg.norm(normals[:,u,v]), 1))
             
             f_x = n1 / n3
             f_y = n2 / n3
 
+            # gradients
             f_xs[u,v] = f_x
             f_ys[u,v] = f_y
 
-
-
     f_xs = np.reshape(np.array(f_xs), s)
     f_ys = np.reshape(np.array(f_ys), s)
+    # integrate to estimate shape
     z = utils.integrateFrankot(f_xs, f_ys)
     surface = np.reshape(z, s)
-    # print('SURFACE', surface)
-    
     
     return surface
 
@@ -527,27 +433,16 @@ if __name__ == '__main__':
 
     U, S, VH = np.linalg.svd(I,full_matrices=False)
     print(U.shape, S.shape, VH.shape)
-    # S[3:] = 0
-    # S_new  = np.eye(7,7)
-    # np.fill_diagonal(S_new, S)
-
-    # I = U @ S_new @ VH
-    # print('After', I.shape)
 
     print('Singular values', S) 
 
 
-    print('********** q1d: Estimate Pseudonormals Calibrated ****************')
+    print('********** q1d: Estimate Pseudonormals Calibrated ***********')
     B = estimatePseudonormalsCalibrated(I, L)
         
 
     print('********** q1e: Estimate Albedos Normals **********')
     albedos, normals_scaled, normals = estimateAlbedosNormals(B)
-    w,h = 431,369
-    # (P), (3 x P)
-
-    
-
 
     print('********** q1f: Estimate Albedos Normals **********')
     albedoIm, normalIm = displayAlbedosNormals(albedos, normals_scaled, s)
