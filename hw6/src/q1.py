@@ -16,6 +16,9 @@ from PIL import Image
 import matplotlib.cm as cm
 import cv2
 import skimage
+from scipy import sparse
+import scipy.sparse.linalg
+
 
 def renderNDotLSphere(center, rad, light, pxSize, res, plot):
 
@@ -175,11 +178,33 @@ def estimatePseudonormalsCalibrated(I, L):
 
     # I:  N= 7*NumPixels 
     # I = I.reshape(I, 7*P) 
-    L =  L.T # N=7 x 3
+    # (3x7)@(PxP) = 
+    identity = scipy.sparse.eye(P)
+    
 
+    # a: 7x3
+    # b: p*p
+    # M=7, N=3, P=p, Q=p
+    # out: 7p, 3p 
 
-    x, residuals, rank, s = np.linalg.lstsq(L,I,rcond=None)
-    return x
+    L = sparse.kron(L,identity).T
+    I = np.reshape(I, (7*P))
+    I = sparse.csr_matrix(I).T
+    
+
+    # L: M=7p, N=3p
+    # I: M=7p
+    # B: N=3p
+
+    print(f'L should be {7*P} by {3*P}', L.shape) # M x N, M=7p, N=3p
+    print(f'I should be {7*P}', I.shape) # M=7p
+    
+
+    ret = sparse.linalg.lsqr(L, I.toarray())
+    b = ret[0]
+    b = np.reshape(b, (3, -1))
+    print(f'b should be 3 x {P}', b.shape) # (3*159039)
+    return b
 
 
 
@@ -204,7 +229,6 @@ def estimateAlbedosNormals(B):
     normals : numpy.ndarray
         The 3 x P matrix of normals
     '''
-
     _, P = B.shape
     n_tilde = B # 3x1 col vec PER PIXEL 
   
@@ -218,10 +242,11 @@ def estimateAlbedosNormals(B):
         albedo = magnitude # albedo
         normal = n_tilde[:,i] / magnitude
 
-        albedos[i] = albedo
-        normals[:, i] = normal
+        albedos[i] = albedo # vector of length <pixels>
+        normals[:, i] = normal # s x 3
 
-
+    # (num_pixels), (3 x num_pixels)
+    print('albedos', albedos.shape, 'normals', normals.shape)
     return albedos, normals
 
 
@@ -260,7 +285,7 @@ def displayAlbedosNormals(albedos, normals, s):
 
     # reshape albedos into image shape
     albedoIm = np.reshape(albedos, (w,h))
-    # print(albedoIm[0,0],albedoIm[0,1],albedoIm[0,2])
+    print(albedoIm[0,0],albedoIm[0,1],albedoIm[0,2])
 
     normalIm = np.reshape(normals, (w,h,3)).astype(np.uint8)
 
@@ -345,7 +370,7 @@ def plotSurface(surface):
 
     Parameters
     ----------
-    surface : numpy.ndarray
+    surface : numpy.ndarray (w,h)
         The depth map to be plotted
 
     Returns
@@ -353,6 +378,7 @@ def plotSurface(surface):
         None
 
     """
+
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
@@ -388,7 +414,7 @@ if __name__ == '__main__':
 
     print('*********  SVD  ***********')
 
-    U, S, VH = np.linalg.svd(I, full_matrices=False)
+    U, S, VH = np.linalg.svd(I,full_matrices=False)
     print('Singular values', S) 
 
 
@@ -399,7 +425,6 @@ if __name__ == '__main__':
     print('********** q1e: Estimate Albedos Normals **********')
     albedos, normals = estimateAlbedosNormals(B)
     # (P), (3 x P)
-    print(albedos.shape, normals.shape, 'aaaa')
 
 
     print('********** q1f: Estimate Albedos Normals **********')
