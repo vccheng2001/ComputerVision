@@ -123,7 +123,7 @@ def loadData(path = "../data/"):
     assert(im.dtype == np.uint16)
 
     lum = skimage.color.rgb2gray(im)
-
+    
     # im1 = np.uint16(im1)
     # assert(im1.dtype == np.uint16)
     # im1 = cv2.cvtColor(im1, cv2.COLOR_RGB2XYZ)
@@ -305,11 +305,15 @@ def estimateAlbedosNormals(B):
                 print('err magnitude', magnitude)
 
     normals = np.reshape(normals, (3, P))
+    albedos = np.array(albedos)
 
+    # scale to between 0, 1?
+    albedos = (albedos - np.min(albedos)) / (np.max(albedos)-np.min(albedos))
     print('max albedo', np.max(albedos))
+    
    
     
-    return np.array(albedos), normals 
+    return albedos, normals 
     # n_tilde = B # 3x1 col vec PER PIXEL 
   
     
