@@ -122,17 +122,16 @@ def loadData(path = "../data/"):
 
     assert(im.dtype == np.uint16)
 
-    im = skimage.color.rgb2xyz(im)
+    lum = skimage.color.rgb2gray(im)
 
     # im1 = np.uint16(im1)
     # assert(im1.dtype == np.uint16)
     # im1 = cv2.cvtColor(im1, cv2.COLOR_RGB2XYZ)
-    lum = im[:,:,1] # extract luminance Y from XYZ
+    # lum = im[:,:,1] # extract luminance Y from XYZ
 
     s = lum.shape
     
     lum = lum.flatten()
-    # lum = lum / np.max(lum)
 
     I = lum
     
@@ -144,15 +143,14 @@ def loadData(path = "../data/"):
 
         assert(im.dtype == np.uint16)
 
-        im = skimage.color.rgb2xyz(im)
+        lum = skimage.color.rgb2gray(im)
         # im = np.uint16(im)
 
 
         # cv2.imshow(str(i), im)
         # cv2.waitKey(0)
-        lum = im[:,:,1] # Y
+        # lum = im[:,:,1] # Y
         lum = lum.flatten()
-        # lum = lum / np.max(lum)
         I = np.vstack((I,lum))
 
     # relative luminance
@@ -370,17 +368,12 @@ def displayAlbedosNormals(albedos, normals, s):
     # reshape albedos into image shape
     albedoIm = np.reshape(albedos, (w,h))
     print(albedoIm[0,0],albedoIm[0,1],albedoIm[0,2])
+    print('normals', -normals*255)
+    normalIm = np.reshape(-255*normals, (w,h,3)).astype(np.uint8)
 
-    normalIm = np.reshape(normals, (w,h,3)).astype(np.uint8)
-
-
-    # nx = normals[0,:]
-    # ny = normals[1,:]
-    # nz = normals[2,:]
-    # fig = plt.figure()
-    # ax = fig.gca(projection='3d')
-    # plt.quiver(nx,ny,nz,length=10)
-    # plt.show()
+    fig = plt.figure()
+    plt.imshow(normalIm, cmap=cm.rainbow)
+    plt.show()
 
 
     # albedo
@@ -431,8 +424,8 @@ def estimateShape(normals, s):
     f_ys = []
     for i in range(P):
         n1, n2, n3 = normals[:,i]
-        f_x = n1 / n3
-        f_y = n2 / n3
+        f_x = -n1 / n3
+        f_y = -n2 / n3
         f_xs.append(f_x)
         f_ys.append(f_y)
     
