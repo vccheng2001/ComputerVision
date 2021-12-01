@@ -23,6 +23,15 @@ import skimage
 import skimage.color
 from skimage.color import rgb2xyz
 
+def scale_zero_to_one(x):
+    xmax = np.max(x)
+    xmin = np.min(x)
+    return (x-xmin) / (xmax - xmin)
+
+
+def normalize(v):
+    norm = np.linalg.norm(v)
+    return norm, v / norm 
 
 
 def renderNDotLSphere(center, rad, light, pxSize, res, plot):
@@ -253,7 +262,6 @@ def estimatePseudonormalsCalibrated(I, L):
     print(f'b should be 3 x {P}', b.shape) # (3*159039)
 
     n_tilde = np.linalg.pinv(L_orig.T) @ I_orig
-    print(n_tilde.shape, 'ntildeeee')
     
     
     return rett
@@ -294,23 +302,31 @@ def estimateAlbedosNormals(B):
     albedos = []
     normals = np.empty((3, w,h,))
 
+
+
+    # r = normalize(np.array([1,2,3]))
+    # print(np.linalg.norm(r))
+    # exit(-1)
     for u in range(w):
+        
         for v in range(h):
-            magnitude = np.linalg.norm(n_tilde[:, u,v])
-            albedos.append(magnitude)
-            try:
-                normals[:, u,v] = n_tilde[:, u,v] / magnitude
-            except Exception as e: 
-                print(e)
-                print('err magnitude', magnitude)
+
+            norm, unit_vec = normalize(n_tilde[:, u,v])
+
+            albedos.append(norm)
+            normals[:,u,v] = unit_vec
 
     normals = np.reshape(normals, (3, P))
     albedos = np.array(albedos)
 
-    # scale to between 0, 1?
-    albedos = (albedos - np.min(albedos)) / (np.max(albedos)-np.min(albedos))
-    print('max albedo', np.max(albedos))
+    # scale to between -1,1
+    # normals = 2*scale_zero_to_one(normals)-1
+    # scale to between 0,1
+    albedos = scale_zero_to_one(albedos)
     
+    print('max min albedos', np.max(albedos), np.min(albedos))
+    print('max min normals', np.max(normals), np.min(normals))
+
    
     
     return albedos, normals 
@@ -368,12 +384,16 @@ def displayAlbedosNormals(albedos, normals, s):
     """
     w, h = s
 
+    # scale normals from [-1,1] range to [0,1] range
+
+    normals = ((normals + 1)/2)#*255
+
+    print('normals should be [0,1]', np.max(normals), np.min(normals) )
 
     # reshape albedos into image shape
     albedoIm = np.reshape(albedos, (w,h))
     print(albedoIm[0,0],albedoIm[0,1],albedoIm[0,2])
-    print('normals', -normals*255)
-    normalIm = np.reshape(-255*normals, (w,h,3)).astype(np.uint8)
+    normalIm = np.reshape(normals, (w,h,3))#.astype(np.uint8)
 
     fig = plt.figure()
     plt.imshow(normalIm, cmap=cm.rainbow)
