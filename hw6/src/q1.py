@@ -122,7 +122,7 @@ def loadData(path = "../data/"):
     I = lum.flatten()
 
     
-
+    # W(431)*H(369) = 159039 PIXELS * 3 CHANNELS = 477117
     # stack remaining imgs
     for i in range(1,7):
         im = cv2.imread(f'{path}input_{i+1}.tif', cv2.IMREAD_UNCHANGED)
@@ -133,7 +133,7 @@ def loadData(path = "../data/"):
 
     L = np.load(f'{path}/sources.npy').T # (3x7)
     print('L', L.shape) # (3,7)
-    print('I', I.shape) # (7, 477117)
+    print('I', I.shape) # (7, 159039)
     print('s', s)       # (431, 369)
 
     return I, L, s
@@ -162,6 +162,8 @@ def estimatePseudonormalsCalibrated(I, L):
         The 3 x P matrix of pseudonormals
     """
 
+    # b = np.linalg.inv(L@L.T)@L@I
+
     # I = Lb
     # minimize: (I-Lb), solve Lb=I
     # L: M,N
@@ -173,7 +175,9 @@ def estimatePseudonormalsCalibrated(I, L):
     # Ax = b
     # L^Tb = I
     # L^T: 7p*3p, b: flatten to 3p, I: flatten to 7p
-
+    import copy
+    L_orig = copy.deepcopy(L)
+    I_orig = copy.deepcopy(I)
     _, P = I.shape # 
 
     # I:  N= 7*NumPixels 
@@ -196,7 +200,9 @@ def estimatePseudonormalsCalibrated(I, L):
     # I: M=7p
     # B: N=3p
 
+    # (1113273, 477117)
     print(f'L should be {7*P} by {3*P}', L.shape) # M x N, M=7p, N=3p
+    # (1113273, 1)
     print(f'I should be {7*P}', I.shape) # M=7p
     
 
@@ -204,7 +210,12 @@ def estimatePseudonormalsCalibrated(I, L):
     b = ret[0]
     b = np.reshape(b, (3, -1))
     print(f'b should be 3 x {P}', b.shape) # (3*159039)
-    return b
+
+    n_tilde = np.linalg.pinv(L_orig.T) @ I_orig
+    print(n_tilde.shape, 'ntildeeee')
+    
+    
+    return n_tilde
 
 
 
@@ -229,25 +240,45 @@ def estimateAlbedosNormals(B):
     normals : numpy.ndarray
         The 3 x P matrix of normals
     '''
+    
     _, P = B.shape
-    n_tilde = B # 3x1 col vec PER PIXEL 
+    w = 431
+    h = 369
+    n_tilde = B
+
+    n_tilde = np.reshape(n_tilde, (3, w, h))
+
+    albedos = []
+    normals = np.empty((3, w,h,))
+
+    for u in range(w):
+        for v in range(h):
+            magnitude = np.linalg.norm(n_tilde[:, u,v])
+            albedos.append(magnitude)
+            normals[:, u,v] = n_tilde[:, u,v] / magnitude
+
+    normals = np.reshape(normals, (3, P))
+    
+    return np.array(albedos), normals 
+    # n_tilde = B # 3x1 col vec PER PIXEL 
   
-    albedos = np.empty(P)
-    normals = np.empty((3,P))
+    
 
-    # albedo_i = mag(n_tilde_i)
-    # normal_i = n_tilde_i / albedo_i
-    for i in range(P):
-        magnitude = np.linalg.norm(n_tilde[:,i]) # magnitude
-        albedo = magnitude # albedo
-        normal = n_tilde[:,i] / magnitude
 
-        albedos[i] = albedo # vector of length <pixels>
-        normals[:, i] = normal # s x 3
+    # for i in range(w)
 
-    # (num_pixels), (3 x num_pixels)
-    print('albedos', albedos.shape, 'normals', normals.shape)
-    return albedos, normals
+
+    # # albedo_i = mag(n_tilde_i)
+    # # normal_i = n_tilde_i / albedo_i
+    # for i in range(P):
+    #     magnitude = np.linalg.norm(n_tilde[:,i]) # magnitude
+    #     albedo = magnitude # albedo
+    #     normal = n_tilde[:,i] / magnitude
+    #     albedos[i] = albedo # vector of length <pixels>
+    #     normals[:, i] = normal # s x 3
+
+    # # (num_pixels), (3 x num_pixels)
+    # return albedos, normals
 
 
 def displayAlbedosNormals(albedos, normals, s):
@@ -285,7 +316,6 @@ def displayAlbedosNormals(albedos, normals, s):
 
     # reshape albedos into image shape
     albedoIm = np.reshape(albedos, (w,h))
-    print(albedoIm[0,0],albedoIm[0,1],albedoIm[0,2])
 
     normalIm = np.reshape(normals, (w,h,3)).astype(np.uint8)
 
@@ -413,8 +443,17 @@ if __name__ == '__main__':
     I, L, s = loadData()
 
     print('*********  SVD  ***********')
+    print('Performing SVD', I.shape)
 
     U, S, VH = np.linalg.svd(I,full_matrices=False)
+    print(U.shape, S.shape, VH.shape)
+    # S[3:] = 0
+    # S_new  = np.eye(7,7)
+    # np.fill_diagonal(S_new, S)
+
+    # I = U @ S_new @ VH
+    # print('After', I.shape)
+
     print('Singular values', S) 
 
 
