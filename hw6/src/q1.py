@@ -313,23 +313,24 @@ def estimateAlbedosNormals(B):
 
             norm, unit_vec = normalize(n_tilde[:, u,v])
 
+
             albedos.append(norm)
             normals[:,u,v] = unit_vec
 
-    normals = np.reshape(normals, (3, P))
+    normals_scaled = ((normals + 1)/2)
+    normals_scaled = np.reshape(normals_scaled, (3, P))
     albedos = np.array(albedos)
 
-    # scale to between -1,1
-    # normals = 2*scale_zero_to_one(normals)-1
     # scale to between 0,1
     albedos = scale_zero_to_one(albedos)
     
     print('max min albedos', np.max(albedos), np.min(albedos))
     print('max min normals', np.max(normals), np.min(normals))
 
-   
-    
-    return albedos, normals 
+
+    # scale to between -1,1
+    # normals = 2*scale_zero_to_one(normals)-1
+    return albedos, normals_scaled, normals
     # n_tilde = B # 3x1 col vec PER PIXEL 
   
     
@@ -386,7 +387,7 @@ def displayAlbedosNormals(albedos, normals, s):
 
     # scale normals from [-1,1] range to [0,1] range
 
-    normals = ((normals + 1)/2)#*255
+    # normals = ((normals + 1)/2)#*255
 
     print('normals should be [0,1]', np.max(normals), np.min(normals) )
 
@@ -431,35 +432,42 @@ def estimateShape(normals, s):
         The image, of size s, of estimated depths at each point
 
     """
-
     
-    # enforce integrability to normals 
-    normals = utils.enforceIntegrability(normals, s, sig = 3)
-    # zx: image of derivatives of depth along x image dimension
 
-    _, P = normals.shape
+    # normals = utils.enforceIntegrability(normals, s)
+    # print('normals after enforcing integ', normals.shape)
 
-    # for each pixel (x,y), normals is (n1, n2, n3)
-    # df/dx = f_x = -n1/n3
-    # df/dy = f_y = -n2/n3
+    w, h = s
+    normals = np.reshape(normals, (3,w,h))
 
-    Z = np.zeros(P)
-    f_xs = []
-    f_ys = []
-    for i in range(P):
-        n1, n2, n3 = normals[:,i]
-        f_x = -n1 / n3
-        f_y = -n2 / n3
-        f_xs.append(f_x)
-        f_ys.append(f_y)
-    
+    f_xs = np.empty((w,h))
+    f_ys = np.empty((w,h))
+
+    for u in range(w):
+        
+        for v in range(h):
+
+            n1,n2,n3 = normals[:,u,v] 
+            assert(np.isclose(np.linalg.norm(normals[:,u,v]), 1))
+            
+            f_x = n1 / n3
+            f_y = n2 / n3
+
+            f_xs[u,v] = f_x
+            f_ys[u,v] = f_y
+
+
 
     f_xs = np.reshape(np.array(f_xs), s)
     f_ys = np.reshape(np.array(f_ys), s)
-    z = utils.integrateFrankot(f_xs, f_ys, pad = 512)
+    z = utils.integrateFrankot(f_xs, f_ys)
     surface = np.reshape(z, s)
+    # print('SURFACE', surface)
+    
+    
     return surface
 
+    
 
 
 def plotSurface(surface):
@@ -480,10 +488,11 @@ def plotSurface(surface):
 
     """
 
-
     fig = plt.figure()
+    # print('surface shape', surface.shape)
     ax = fig.add_subplot(111, projection='3d')
     xx, yy = np.mgrid[0:431, 0:369]
+    # print(xx.shape, yy.shape)
     ax.plot_surface(xx, yy, surface, cmap=cm.coolwarm)
     plt.show()
 
@@ -533,15 +542,18 @@ if __name__ == '__main__':
         
 
     print('********** q1e: Estimate Albedos Normals **********')
-    albedos, normals = estimateAlbedosNormals(B)
+    albedos, normals_scaled, normals = estimateAlbedosNormals(B)
+    w,h = 431,369
     # (P), (3 x P)
+
+    
 
 
     print('********** q1f: Estimate Albedos Normals **********')
-    albedoIm, normalIm = displayAlbedosNormals(albedos, normals, s)
+    albedoIm, normalIm = displayAlbedosNormals(albedos, normals_scaled, s)
 
     print('********** q1g: Normal integration **********')
     surface = estimateShape(normals, s)
-    print('surface', surface.shape)
+   
     plotSurface(surface)
 
