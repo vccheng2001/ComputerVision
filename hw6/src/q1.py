@@ -131,15 +131,10 @@ def loadData(path = "../data/"):
     im = cv2.imread(f'{path}input_1.tif', cv2.IMREAD_UNCHANGED)
     im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
     im = skimage.color.rgb2xyz(im)
-
-    # assert(im.dtype == np.uint16)
     # extract luminance, flatten into vector
     lum = im[:,:,1]
     s = lum.shape
-    lum = lum.flatten()
-
-    I = lum
-    
+    I = lum.flatten()
     # W(431)*H(369) = 159039 PIXELS * 3 CHANNELS = 477117
     # stack remaining images 
     for i in range(1,7):
@@ -148,13 +143,9 @@ def loadData(path = "../data/"):
         im = skimage.color.rgb2xyz(im)
         # assert(im.dtype == np.uint16)
         lum = im[:,:,1]
-        lum = lum.flatten()
-        I = np.vstack((I,lum))
-
+        I = np.vstack((I,lum.flatten()))
     # divide by max to get relative luminance (range 0->1)
     I = I / np.max(I)
-
-   
     L = np.load(f'{path}/sources.npy').T # (3x7)
     print('L', L.shape) # (3,7)
     print('I', I.shape) # (7, 159039)
@@ -206,6 +197,8 @@ def estimatePseudonormalsCalibrated(I, L):
     # B: N=3p
 
     # solve least squares using sparse matrix 
+
+    print('L', L.shape)
     ret = sparse.linalg.lsqr(L, I.toarray())
     b2 = ret[0]
     b2 = np.reshape(b2, (3, -1))
@@ -424,7 +417,7 @@ if __name__ == '__main__':
 
     print('*************** q1a *********************')
 
-    plot =  False
+    plot =  True
 
     renderNDotLSphere(center, rad, l1, pxSize, res, plot)
     renderNDotLSphere(center, rad, l2, pxSize, res, plot)
