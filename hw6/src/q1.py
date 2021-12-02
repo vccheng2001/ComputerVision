@@ -9,6 +9,7 @@ from contextlib import contextmanager
 import numpy as np
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from utils import enforceIntegrability
 import utils
 import scipy
 import scipy.io
@@ -128,9 +129,12 @@ def loadData(path = "../data/"):
 
     # first image 
     im = cv2.imread(f'{path}input_1.tif', cv2.IMREAD_UNCHANGED)
-    assert(im.dtype == np.uint16)
+    im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+    im = skimage.color.rgb2xyz(im)
+
+    # assert(im.dtype == np.uint16)
     # extract luminance, flatten into vector
-    lum = skimage.color.rgb2gray(im)
+    lum = im[:,:,1]
     s = lum.shape
     lum = lum.flatten()
 
@@ -140,22 +144,23 @@ def loadData(path = "../data/"):
     # stack remaining images 
     for i in range(1,7):
         im = cv2.imread(f'{path}input_{i+1}.tif', cv2.IMREAD_UNCHANGED)
-        im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
-        assert(im.dtype == np.uint16)
-        lum = skimage.color.rgb2gray(im)
+        im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB) 
+        im = skimage.color.rgb2xyz(im)
+        # assert(im.dtype == np.uint16)
+        lum = im[:,:,1]
         lum = lum.flatten()
         I = np.vstack((I,lum))
 
     # divide by max to get relative luminance (range 0->1)
     I = I / np.max(I)
 
+   
     L = np.load(f'{path}/sources.npy').T # (3x7)
     print('L', L.shape) # (3,7)
     print('I', I.shape) # (7, 159039)
     print('s', s)       # (431, 369)
-
     return I, L, s
-
+   
 
 
 def estimatePseudonormalsCalibrated(I, L):
@@ -301,7 +306,7 @@ def displayAlbedosNormals(albedos, normals, s):
 
     # reshape albedos into image shape
     albedoIm = np.reshape(albedos, (w,h))
-    normalIm = np.reshape(normals, (w,h,3))
+    normalIm = np.reshape(normals.T, (w,h,3))
 
     # plot albedo
     fig = plt.figure()
@@ -317,7 +322,7 @@ def displayAlbedosNormals(albedos, normals, s):
 
 
 
-def estimateShape(normals, s):
+def estimateShape(normals, s, enforce_integ=False):
 
     """
     Question 1 (i)
@@ -340,8 +345,9 @@ def estimateShape(normals, s):
 
     """
     
-
-    # normals = utils.enforceIntegrability(normals, s)
+    if enforce_integ:
+        normals = np.reshape(normals, (3,-1))
+        normals = utils.enforceIntegrability(normals, s)
     # print('normals after enforcing integ', normals.shape)
 
     w, h = s
@@ -356,7 +362,7 @@ def estimateShape(normals, s):
         for v in range(h):
             # calculate normals (should be unit vector)
             n1,n2,n3 = normals[:,u,v] 
-            assert(np.isclose(np.linalg.norm(normals[:,u,v]), 1))
+            # assert(np.isclose(np.linalg.norm(normals[:,u,v]), 1))
             
             f_x = n1 / n3
             f_y = n2 / n3
@@ -444,7 +450,7 @@ if __name__ == '__main__':
     print('********** q1e: Estimate Albedos Normals **********')
     albedos, normals_scaled, normals = estimateAlbedosNormals(B)
 
-    print('********** q1f: Estimate Albedos Normals **********')
+    print('********** q1f: Display Albedos Normals **********')
     albedoIm, normalIm = displayAlbedosNormals(albedos, normals_scaled, s)
 
     print('********** q1g: Normal integration **********')
